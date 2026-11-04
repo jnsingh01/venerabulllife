@@ -1,0 +1,769 @@
+/* Venerabull Life — the markup, written once.
+
+   Every piece of shared markup comes from here: the eBay notice, the header and
+   footer, the product cards and rows, the comparison table, the Shop panel and
+   the phone menu, and the whole product page. The browser uses it to redraw
+   the shop when someone filters or sorts and to build the menus
+   (assets/life.js), and the site's generator uses the very same functions to
+   write the static pages, so the HTML a visitor gets before any script runs
+   and the HTML the script draws cannot differ. Pure functions of window.LIFE
+   (assets/catalog.js); nothing here touches the page.
+
+   `root` is the path from the page to the site's top: '' for the pages at the
+   top, '../' for a product page. */
+(function (g) {
+  'use strict';
+
+  var STORE = 'https://www.ebay.com/str/everydaywellness';
+  var STORE_NAME = 'Everyday Wellness';
+  var NOTICE = 'For now, everything we sell is sold through our eBay store, ' + STORE_NAME + '.';
+  /* the one way an empty category is described, everywhere */
+  var NOT_HERE = 'Not here yet';
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function money(n) { return '$' + Number(n).toFixed(2); }
+  /* listed price ÷ the servings on the label, to the cent; "about" when the
+     label gives the servings as approximate */
+  function perServing(p) { return (p.servings.about ? 'about ' : '') + money(Math.round(p.price * 100 / p.servings.n) / 100); }
+  function servingsText(p) { return (p.servings.about ? 'About ' : '') + p.servings.n; }
+  function fullName(p) { return p.brand + ' ' + p.name; }
+  function items(n) { return n + (n === 1 ? ' product' : ' products'); }
+  /* the date a product's listing, and so its price, was checked */
+  function checkedOf(p, L) { L = L || g.LIFE || {}; return (p.ebay && p.ebay.checkedText) || L.checkedText || ''; }
+  /* every price's check date in one phrase: "30 Oct 2026", or, when a listing
+     was checked on another day, "30 Oct 2026 (Ka’Chava’s on 3 Nov 2026)" */
+  function checkedAll(L) {
+    var by = {}, order = [];
+    L.products.forEach(function (p) {
+      var d = checkedOf(p, L);
+      if (d === L.checkedText) { return; }
+      if (!by[d]) { by[d] = []; order.push(d); }
+      by[d].push(p.brand + '’s');
+    });
+    return L.checkedText + (order.length ? ' (' + order.map(function (d) { return andList(by[d]) + ' on ' + d; }).join('; ') + ')' : '');
+  }
+  function andList(b) { return b.length > 1 ? b.slice(0, -1).join(', ') + ' and ' + b[b.length - 1] : b.join(''); }
+  function productHref(p, root) { return (root || '') + 'products/' + p.id + '.html'; }
+  function photo(p, n, card, root) { return (root || '') + 'assets/img/' + p.id + '-' + n + (card ? '-card' : '') + '.jpg'; }
+  /* the packshot: the package from one of its photos, on the plain ground */
+  function pack(p, card, root) { return (root || '') + 'assets/img/' + p.id + '-pack' + (card ? '-card' : '') + '.jpg'; }
+  /* Every picture a product page shows, in order: the packshot first, then
+     each photo of the actual package. Each says exactly what it is. */
+  /* Every photo was taken under a warm lamp, so no packshot's colors are
+     exact. A packshot whose white print measured cleanly has the lamp's cast
+     reduced by one matrix; the others keep their colors as photographed. Each
+     says which, everywhere it is described. */
+  function colors(p) {
+    return p.pack.balanced ? 'with the lamp’s color cast reduced; its colors are approximate'
+      : 'its colors are as photographed under a warm lamp, so they are approximate';
+  }
+  function slides(p, root) {
+    var N = p.photos.length, out = [];
+    if (p.pack) {
+      out.push({ kind: 'pack', n: p.pack.photo, src: pack(p, false, root), thumb: pack(p, true, root), w: p.pack.w, h: p.pack.h, tw: 480, th: 600,
+        alt: 'The ' + fullName(p) + ' bag from photo ' + p.pack.photo + ', lifted onto a plain ground' + (p.pack.balanced ? ' ' : '; ') + colors(p),
+        /* the viewer's caption: its counter already says "From photo N" */
+        cap: 'The bag, lifted onto a plain ground' + (p.pack.balanced ? ' with the lamp’s color cast reduced. Its colors are approximate.'
+          : '. Its colors are as photographed under a warm lamp, so they are approximate.'),
+        count: 'From photo ' + p.pack.photo, label: 'The bag from photo ' + p.pack.photo + ', on a plain ground; colors approximate' });
+    }
+    p.photos.forEach(function (ph, i) {
+      out.push({ kind: 'photo', n: ph.n, src: photo(p, ph.n, false, root), thumb: photo(p, ph.n, true, root), w: 720, h: 1280, tw: 405, th: 720,
+        alt: ph.alt, cap: ph.alt, count: 'Photo ' + (i + 1) + ' of ' + N, label: 'Photo ' + (i + 1) + ' of ' + N + ': ' + ph.alt });
+    });
+    return out;
+  }
+  /* what the first picture is, and what the rest are */
+  function galNote(p) {
+    var N = p.photos.length, rest = (N === 2 ? 'Photos 1 and 2 are' : 'Photos 1 to ' + N + ' are') + ' the package as photographed, front and back.';
+    if (!p.pack) { return 'Photos of the actual package, front and back.'; }
+    return 'The first picture is the bag from photo ' + p.pack.photo + ', lifted onto a plain ground' + (p.pack.balanced ? ' ' : '; ') + colors(p) + '. ' + rest;
+  }
+  function catOf(L, id) { return L.categories.filter(function (c) { return c.id === id; })[0] || null; }
+  function counts(L) {
+    var n = {};
+    L.products.forEach(function (p) { n[p.category] = (n[p.category] || 0) + 1; });
+    return n;
+  }
+  function brands(L) {
+    var b = [];
+    L.products.forEach(function (p) { if (b.indexOf(p.brand) < 0) { b.push(p.brand); } });
+    return b;
+  }
+  function brandList(L) { return andList(brands(L)); }
+  /* every value a facet group carries, in catalogue order, with its count */
+  function facetValues(L, gid) {
+    var vals = [], n = {};
+    L.products.forEach(function (p) {
+      (p.facet[gid] || []).forEach(function (v) { if (vals.indexOf(v) < 0) { vals.push(v); } n[v] = (n[v] || 0) + 1; });
+    });
+    return vals.map(function (v) { return { v: v, n: n[v] }; });
+  }
+  /* how a facet value reads as a link: "Plant" in "Protein from" is "Plant protein" */
+  function facetLabel(gid, v) { return gid === 'source' ? v + ' protein' : v; }
+  function shopHref(root, key, v) { return (root || '') + 'shop.html' + (key ? '?' + key + '=' + encodeURIComponent(v) : ''); }
+
+  var ICON = {
+    chev: '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    check: '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m2.5 6.2 2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    arrow: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7h8m-3-3.2L11 7l-3 3.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    ne: '<svg class="ne" width="11" height="11" viewBox="0 0 11 11" aria-hidden="true"><path d="M3 8 8 3M4 2.6h4.4V7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    plus: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    prev: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    next: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    search: '<svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m11 11 3.4 3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    menu: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2.5 5.5h13M2.5 12.5h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    close: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="m4 4 10 10M14 4 4 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    zoom: '<svg class="zm" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M8.5 1.75h3.75V5.5M5.5 12.25H1.75V8.5M12.25 1.75 8.4 5.6M1.75 12.25 5.6 8.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    minus: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    steps: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="5" r="1.3" fill="currentColor"/><circle cx="4" cy="10" r="1.3" fill="currentColor"/><circle cx="4" cy="15" r="1.3" fill="currentColor"/><path d="M8 5h9M8 10h9M8 15h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+  };
+
+  /* a link that leaves for eBay: always a new tab, always said so */
+  function ext(href, text, cls, sr) {
+    return '<a' + (cls ? ' class="' + cls + '"' : '') + ' href="' + esc(href) + '" target="_blank" rel="noopener">' + text + ICON.ne +
+      '<span class="sr"> (' + esc(sr || 'opens eBay in a new tab') + ')</span></a>';
+  }
+  function storeLink(text, cls) { return ext(STORE, text || 'Visit the store', cls, 'opens our eBay store in a new tab'); }
+
+  /* The site's own pictures (not product photos): every editorial image with
+     its true pixel size and that of its 800-wide copy, so each <img> carries
+     honest width, height and srcset values. */
+  var IMG = {
+    'life-hero': [1752, 897, 800, 409], 'dim-mind': [1086, 1448, 600, 800], 'dim-body': [1024, 1536, 533, 800],
+    'dim-heart': [1024, 1536, 533, 800], 'dim-soul': [1024, 1536, 533, 800], 'cat-protein': [1200, 1200, 800, 800],
+    'cat-vitamins': [1254, 1254, 800, 800], 'cat-skin': [1254, 1254, 800, 800], 'cat-bath': [1200, 1200, 800, 800],
+    'spa-hero': [1672, 941, 800, 450], 'spa-detail': [1672, 941, 800, 450], 'rest-hero': [1774, 887, 800, 400],
+    'rest-detail': [1672, 941, 800, 450], 'exp-hero': [1672, 941, 800, 450], 'exp-detail': [1200, 675, 800, 450]
+  };
+  /* <img> for one of those pictures. o: alt, sizes, lazy, pos (object-position), cls, high */
+  function pic(name, root, o) {
+    var d = IMG[name], b = (root || '') + 'assets/img/' + name;
+    o = o || {};
+    return '<img' + (o.cls ? ' class="' + o.cls + '"' : '') + ' src="' + b + '.jpg" srcset="' + b + '-800.jpg ' + d[2] + 'w, ' + b + '.jpg ' + d[0] + 'w"' +
+      ' sizes="' + esc(o.sizes || '100vw') + '" width="' + d[0] + '" height="' + d[1] + '" alt="' + esc(o.alt || '') + '"' +
+      (o.lazy === false ? '' : ' loading="lazy"') + ' decoding="async"' + (o.high ? ' fetchpriority="high"' : '') +
+      (o.pos ? ' style="object-position:' + o.pos + '"' : '') + '>';
+  }
+
+  /* ── the frame of every page ───────────────────────────────────────────── */
+  var NAV = [
+    { id: 'shop', href: 'shop.html', name: 'Shop' },
+    { id: 'spa', href: 'spa.html', name: 'Spa' },
+    { id: 'rest', href: 'rest.html', name: 'Rest' },
+    { id: 'experiences', href: 'experiences.html', name: 'Experiences' },
+    { id: 'help', href: 'help.html', name: 'How buying works' }
+  ];
+  /* the directions: shown with real presence, never offered */
+  var DIRECTIONS = [
+    { id: 'spa', href: 'spa.html', name: 'The Spa', short: 'Spa', status: 'Not yet open', img: 'spa-hero', pos: '50% 55%',
+      line: 'Warmth, water and stillness, in rooms made for quiet.',
+      keys: 'thermal circuit warm rooms cool water sauna cold heat treatments quiet' },
+    { id: 'rest', href: 'rest.html', name: 'Rest', short: 'Rest', status: 'Not yet available', img: 'rest-hero', pos: '62% 60%',
+      line: 'Mattresses, bedding and everything for sleep, in natural materials.',
+      keys: 'mattresses natural materials bedding linen cotton wool sleep bed night' },
+    { id: 'experiences', href: 'experiences.html', name: 'Experiences', short: 'Experiences', status: 'Not yet available', img: 'exp-hero', pos: '50% 50%',
+      line: 'Retreats, classes and gatherings, much of it outdoors.',
+      keys: 'retreats classes movement breath craft gatherings food company outdoors walks woods open air' }
+  ];
+  /* the help page, as search finds it (`keys`: words its page uses) */
+  var HELP = { href: 'help.html', name: 'How buying works', line: 'Every product is bought through its own eBay listing.',
+    keys: 'ebay buy buying order delivery shipping returns payment pay price listing seller everyday wellness store' };
+  var DIRECTIONS_NOTE = 'A direction for Venerabull Life, not an announcement. Nothing here can be booked or ordered yet.';
+
+  function status(text) { return '<span class="status' + (text === 'Open now' ? ' is-open' : '') + '">' + esc(text) + '</span>'; }
+
+  function notice(root) {
+    return '<aside class="notice" aria-label="Where to buy">\n  <div class="wrap notice-in"><p>' + esc(NOTICE) + ' ' +
+      storeLink('Visit the store', 'notice-a') + '</p></div>\n</aside>\n';
+  }
+  /* cur: which page this is (home, shop, product, spa, rest, experiences, help, resolve) */
+  function header(root, cur) {
+    return '<header class="top" id="top">\n  <div class="wrap top-in">\n' +
+      '    <a class="brand" href="' + root + 'index.html"' + (cur === 'home' ? ' aria-current="page"' : '') + ' aria-label="Venerabull Life, home">' +
+        '<img src="' + root + 'assets/venerabull-mark.png" alt="" width="30" height="24" decoding="async"><span class="brand-w">Venerabull <span>Life</span></span></a>\n' +
+      '    <nav class="nav" id="nav" aria-label="Main">\n      <ul class="nav-l">\n' +
+      NAV.map(function (n) {
+        var here = n.id === cur || (n.id === 'shop' && (cur === 'product' || cur === 'resolve'));
+        return '        <li' + (n.id === 'shop' ? ' class="nav-shop"' : '') + '><a class="nav-a' + (here ? ' is-here' : '') + '"' + (n.id === 'shop' ? ' id="shop-a"' : '') +
+          ' href="' + root + n.href + '"' + (n.id === cur ? ' aria-current="page"' : '') + '>' + esc(n.name) + (n.id === 'shop' ? ' ' + ICON.chev : '') + '</a></li>\n';
+      }).join('') +
+      '      </ul>\n    </nav>\n' +
+      '    <div class="top-end">\n' +
+      '      <button class="icon-b search-t js-only" type="button" id="search-t" aria-expanded="false" aria-controls="search" aria-label="Search the shop">' + ICON.search + '</button>\n' +
+      '      <form class="search js-only" role="search" action="' + root + 'shop.html" id="search">\n' +
+      '        <label class="sr" for="q">Search the shop</label>\n' +
+      '        ' + ICON.search.replace('<svg ', '<svg class="ico" ') + '\n' +
+      '        <input id="q" name="q" type="search" placeholder="Search the shop" autocomplete="off" enterkeyhint="search">\n' +
+      '        <kbd aria-hidden="true">/</kbd>\n      </form>\n' +
+      '      ' + storeLink('eBay store', 'pill ebay-pill') + '\n' +
+      '      <a class="icon-b menu-a" id="menu-a" href="#foot-nav">' + ICON.menu + '<span class="sr">Menu</span></a>\n' +
+      '    </div>\n  </div>\n</header>\n';
+  }
+  function footer(L, root, cur) {
+    var n = counts(L);
+    function li(href, text, id, st) {
+      return '<li><a href="' + root + href + '"' + (id && id === cur ? ' aria-current="page"' : '') + (st ? ' class="has-st"' : '') + '>' +
+        (st ? '<span>' + text + '</span><small>' + esc(st) + '</small>' : text) + '</a></li>';
+    }
+    return '<footer class="foot" id="foot">\n  <div class="wrap">\n' +
+      '    <div class="foot-top">\n' +
+      '      <div class="foot-brand"><a class="brand" href="' + root + 'index.html" aria-label="Venerabull Life, home"><img src="' + root + 'assets/venerabull-mark.png" alt="" width="30" height="24" loading="lazy" decoding="async"><span class="brand-w">Venerabull <span>Life</span></span></a>' +
+        '<p>Venerabull Life, from Venerabull. Everything for a good life: mind, body, heart and soul.</p></div>\n' +
+      '      <nav class="foot-nav" id="foot-nav" aria-label="Footer">\n' +
+      '        <div><h2>Shop</h2><ul>' + li('shop.html', 'The shop', 'shop') +
+        L.categories.map(function (c) { return li('shop.html?c=' + c.id, esc(c.name), null, n[c.id] ? '' : NOT_HERE); }).join('') +
+        li('shop.html#compare', 'Compare products') + '</ul></div>\n' +
+      '        <div><h2>Life</h2><ul>' + li('index.html', 'Home', 'home') +
+        DIRECTIONS.map(function (d) { return li(d.href, esc(d.short), d.id, d.status); }).join('') + '</ul></div>\n' +
+      '        <div><h2>Help</h2><ul>' + li('help.html', 'How buying works', 'help') + '<li>' + storeLink('Our eBay store') + '</li></ul></div>\n' +
+      '      </nav>\n    </div>\n' +
+      '    <p class="foot-store">' + esc(NOTICE) + ' ' + storeLink('Visit the store') + '</p>\n' +
+      '    <div class="foot-fine">\n' +
+      '      <p>Purchases are completed on eBay, in eBay’s own checkout. Product facts come from each package’s label, and the label on the package is authoritative. Nothing on this site is medical advice.</p>\n' +
+      '      <p>The images of the spa, Rest and Experiences are illustrations of directions that aren’t open yet. Category and lifestyle images are illustrations too; product photos are of the actual packages.</p>\n' +
+      '      <p>© 2026 Venerabull</p>\n    </div>\n  </div>\n</footer>\n';
+  }
+
+  /* ── the Shop panel (wide screens) and the menu sheet (phones) ──────────── */
+  function panelGroups(L, root) {
+    var n = counts(L);
+    var cats = '<li><a href="' + shopHref(root) + '" data-cat=""><b>Everything</b><span class="st is-in">' + items(L.products.length) + '</span></a></li>' +
+      L.categories.map(function (c) {
+        return '<li><a href="' + esc(shopHref(root, 'c', c.id)) + '" data-cat="' + esc(c.id) + '"><b>' + esc(c.name) + '</b>' +
+          (n[c.id] ? '<span class="st is-in">' + items(n[c.id]) + '</span>' : '<span class="st">' + NOT_HERE + '</span>') + '</a></li>';
+      }).join('');
+    var groups = [{ h: 'Categories', id: 'cats', list: cats }];
+    L.facets.forEach(function (f) {
+      if (f.id === 'flavor') { return; }
+      var vals = facetValues(L, f.id);
+      if (!vals.length) { return; }
+      groups.push({ h: f.name, id: f.id, list: vals.map(function (x) {
+        return '<li><a href="' + esc(shopHref(root, f.id, x.v)) + '"><b>' + esc(facetLabel(f.id, x.v)) + '</b><span class="st">' + x.n + '</span></a></li>';
+      }).join('') });
+    });
+    groups.push({ h: 'Brands', id: 'brands', list: brands(L).map(function (b) {
+      var k = L.products.filter(function (p) { return p.brand === b; }).length;
+      return '<li><a href="' + esc(shopHref(root, 'q', b)) + '"><b>' + esc(b) + '</b><span class="st">' + k + '</span></a></li>';
+    }).join('') });
+    return groups;
+  }
+  function shopPanel(L, root) {
+    return '<div class="panel" id="shop-p" role="region" aria-label="Shop">' +
+      '<div class="wrap panel-in">' +
+        panelGroups(L, root).map(function (gr) {
+          return '<div class="panel-g"><h2 class="panel-h" id="pg-' + gr.id + '">' + esc(gr.h) + '</h2><ul aria-labelledby="pg-' + gr.id + '">' + gr.list + '</ul></div>';
+        }).join('') +
+        '<a class="panel-tile" href="' + STORE + '" target="_blank" rel="noopener">' +
+          pic('cat-protein', root, { sizes: '280px', alt: '' }) +
+          '<span class="panel-tile-t">Everything we sell is in our eBay store, ' + STORE_NAME + ' ' + ICON.ne + '<span class="sr"> (opens our eBay store in a new tab)</span></span>' +
+          '<span class="cap">Illustration</span></a>' +
+      '</div></div>';
+  }
+  function menuSheet(L, root, cur) {
+    var groups = panelGroups(L, root);
+    return '<div class="msheet" id="menu-s" role="dialog" aria-modal="true" aria-labelledby="menu-h" hidden>' +
+      '<div class="msheet-h"><p class="msheet-t" id="menu-h">Menu</p><button class="icon-b" type="button" id="menu-x" aria-label="Close the menu">' + ICON.close + '</button></div>' +
+      '<div class="msheet-b">' +
+        '<p class="msheet-l"><a href="' + root + 'index.html"' + (cur === 'home' ? ' aria-current="page"' : '') + '>Home</a></p>' +
+        '<div class="macc"><h2 class="macc-h"><button class="macc-b" type="button" aria-expanded="false" aria-controls="macc-shop" id="macc-shop-b">Shop' + ICON.chev + '</button></h2>' +
+          '<div class="macc-p" id="macc-shop" role="region" aria-labelledby="macc-shop-b" hidden>' +
+            '<p class="msheet-l"><a href="' + shopHref(root) + '"' + (cur === 'shop' ? ' aria-current="page"' : '') + '>The shop</a></p>' +
+            groups.map(function (gr) { return '<div class="macc-g"><h3>' + esc(gr.h) + '</h3><ul>' + gr.list + '</ul></div>'; }).join('') +
+          '</div></div>' +
+        DIRECTIONS.map(function (d) {
+          return '<p class="msheet-l"><a href="' + root + d.href + '"' + (cur === d.id ? ' aria-current="page"' : '') + '>' + esc(d.short) + ' ' + status(d.status) + '</a></p>';
+        }).join('') +
+        '<p class="msheet-l"><a href="' + root + 'help.html"' + (cur === 'help' ? ' aria-current="page"' : '') + '>How buying works</a></p>' +
+        '<p class="msheet-l">' + storeLink('Our eBay store') + '</p>' +
+        '<p class="msheet-note">' + esc(NOTICE) + '</p>' +
+      '</div></div>';
+  }
+
+  /* ── a product card ───────────────────────────────────────────────────── */
+  /* The card's picture is the packshot: one package, centred on the well's own
+     ground, so every card in a row reads at one scale. Its alt is empty
+     because the card's link names the product. */
+  function card(p, root) {
+    var im = p.pack
+      ? '<img src="' + esc(pack(p, true, root)) + '" srcset="' + esc(pack(p, true, root)) + ' 480w, ' + esc(pack(p, false, root)) + ' ' + p.pack.w + 'w"' +
+        ' sizes="(min-width: 1100px) 330px, (min-width: 760px) 34vw, (min-width: 560px) 46vw, 74vw" alt="" width="480" height="600" loading="lazy" decoding="async">'
+      : '<img src="' + esc(photo(p, 1, true, root)) + '" srcset="' + esc(photo(p, 1, true, root)) + ' 405w, ' + esc(photo(p, 1, false, root)) + ' 720w"' +
+        ' sizes="(min-width: 1100px) 330px, (min-width: 760px) 34vw, (min-width: 560px) 46vw, 74vw" alt="" width="405" height="720" loading="lazy" decoding="async">';
+    return '<article class="card" data-id="' + esc(p.id) + '" data-dated>' +
+      '<div class="ph' + (p.pack ? ' is-pack' : '') + '">' + im + '<span class="fail">Photo didn’t load</span></div>' +
+      '<div class="card-b">' +
+        '<p class="card-brand">' + esc(p.brand) + '</p>' +
+        '<h3 class="card-name"><a class="card-a" href="' + esc(productHref(p, root)) + '"><span class="sr">' + esc(p.brand) + ' </span>' + esc(p.name) + '</a></h3>' +
+        '<p class="card-sub">' + esc(p.flavor) + ' · <span class="nw">' + esc(p.size.text) + '</span></p>' +
+        '<p class="card-facts">' + p.protein + ' g protein · ' + esc(servingsText(p).replace('About', 'about')) + ' servings</p>' +
+        '<p class="card-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
+        '<p class="card-when">On eBay, checked <span class="nw">' + esc(checkedOf(p)) + '</span></p>' +
+        '<div class="card-foot"><span class="card-go" aria-hidden="true">View ' + ICON.arrow + '</span>' +
+          ext(p.ebay.url, 'Buy on eBay', 'card-buy', 'opens the eBay listing for the ' + fullName(p) + ' in a new tab') + '</div>' +
+      '</div></article>';
+  }
+  function cards(list, root) { return list.map(function (p) { return card(p, root); }).join(''); }
+  /* the shop's last cell: the store itself, so a grid of five never ends on a gap */
+  function storeTile() {
+    return '<a class="stile" href="' + STORE + '" target="_blank" rel="noopener">' +
+      '<span class="stile-e">' + STORE_NAME + ', on eBay</span>' +
+      '<span class="stile-t">Everything we sell is in our eBay store.</span>' +
+      '<span class="stile-go">Visit the store' + ICON.ne + '</span><span class="sr"> (opens our eBay store in a new tab)</span></a>';
+  }
+  function priceNote(L) { return 'Prices are the listed eBay prices, checked ' + checkedAll(L) + '. Per-serving prices are the listed price divided by the servings on the label. eBay shows the current price and availability.'; }
+
+  /* ── the shop's written sections ──────────────────────────────────────── */
+  function cmpTable(L, root) {
+    return '<caption class="sr">Every product here, compared on its label figures, with prices as listed on eBay and checked ' + esc(checkedAll(L)) + '</caption>' +
+      '<thead role="rowgroup"><tr role="row">' + ['Product', 'Size', 'Servings', 'Protein', 'Listed price', 'Per serving', 'Date on the bag'].map(function (h) {
+        return '<th scope="col" role="columnheader">' + h + '</th>'; }).join('') + '</tr></thead><tbody role="rowgroup">' +
+      L.products.map(function (p) {
+        function td(l, v, num) { return '<td' + (num ? ' class="num"' : '') + ' role="cell" data-l="' + l + '">' + v + '</td>'; }
+        return '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '">' + esc(fullName(p)) + '</a><small>' + esc(p.flavor) + '</small></th>' +
+          td('Size', esc(p.size.text).replace(/\(([^)]*)\)/, '<span class="nw">($1)</span>')) + td('Servings', esc(servingsText(p)), true) + td('Protein', p.protein + ' g', true) +
+          td('Listed price', money(p.price), true) + td('Per serving', esc(perServing(p)), true) + td('Date on the bag', esc(p.date.kind + ' ' + p.date.text)) + '</tr>';
+      }).join('') + '</tbody>';
+  }
+  function cmpNote(L) { return 'Listed prices as checked on eBay on ' + checkedAll(L) + '. eBay shows the current price and availability.'; }
+  function howListing(L) {
+    return 'As listed when the listings were checked on ' + checkedAll(L) + ': ' + L.listing.shipping.toLowerCase() +
+      ', item located in ' + L.listing.from + '. ' + L.listing.returns;
+  }
+  function listingDl(L) {
+    return '<dl class="listing"><dt>Condition</dt><dd>' + esc(L.listing.condition) + '</dd><dt>Shipping</dt><dd>' + esc(L.listing.shipping) + '</dd>' +
+      '<dt>Item location</dt><dd>' + esc(L.listing.from) + '</dd><dt>Returns</dt><dd>' + esc(L.listing.returns) + '</dd></dl>';
+  }
+  function intro(L) {
+    var cat = L.categories.filter(function (c) { return counts(L)[c.id]; }).map(function (c) { return c.name.toLowerCase().replace('&', 'and'); });
+    return (cat.length ? cat.join(', ').replace(/^./, function (x) { return x.toUpperCase(); }) : 'Nothing yet') + ' from ' + brandList(L) +
+      ', each with its size, servings and the date on the package.';
+  }
+
+  /* ── the home page's written sections ─────────────────────────────────── */
+  /* chips for what the labels say, with how many products carry each */
+  function homeChips(L, root) {
+    return L.facets.filter(function (f) { return f.id !== 'flavor'; }).map(function (f) {
+      var vals = facetValues(L, f.id);
+      if (!vals.length) { return ''; }
+      return '<div class="mchips" role="group" aria-labelledby="mc-' + f.id + '"><span class="mchips-l" id="mc-' + f.id + '">' + esc(f.name) + '</span>' +
+        vals.map(function (x) {
+          return '<a class="mchip" href="' + esc(shopHref(root, f.id, x.v)) + '">' + esc(facetLabel(f.id, x.v)) +
+            ' <span class="n" aria-hidden="true">' + x.n + '</span><span class="sr">, ' + items(x.n) + '</span></a>';
+        }).join('') + '</div>';
+    }).join('');
+  }
+  /* shop by category: a typographic list, with the category's picture beside
+     it on wide screens and on each tile on phones */
+  function homeCats(L, root) {
+    var n = counts(L);
+    return '<ul class="catlist-l">' + L.categories.map(function (c, i) {
+      var k = n[c.id] || 0;
+      return '<li><a class="catlist-a" href="' + esc(shopHref(root, 'c', c.id)) + '" data-i="' + i + '">' +
+        '<span class="catlist-tile">' + pic('cat-' + c.id, root, { sizes: '50vw', alt: '' }) + '</span>' +
+        '<span class="catlist-name">' + esc(c.name) + '</span>' +
+        '<span class="catlist-n">' + (k ? items(k) + ' here' : NOT_HERE) + '</span></a></li>';
+    }).join('') + '</ul>' +
+    '<div class="catlist-stage" aria-hidden="true">' + L.categories.map(function (c, i) {
+      return pic('cat-' + c.id, root, { sizes: '(min-width: 1360px) 620px, 46vw', alt: '', cls: i === 0 ? 'is-on' : '' });
+    }).join('') + '</div>';
+  }
+
+  /* ── the label, set as text ────────────────────────────────────────────── */
+  /* A link to one photo of the package: without scripts it opens the photo
+     itself; the product page's script opens it in the full-screen viewer,
+     zoomed onto `focus` (x, y, w, h in the photo) where it is given. */
+  function photoLink(p, n, root, text, focus) {
+    return '<a class="lab-ph" href="' + esc(photo(p, n, false, root)) + '" data-photo="' + n + '"' + (focus ? ' data-focus="' + esc(focus.join(',')) + '"' : '') +
+      ' target="_blank" rel="noopener">' + esc(text || 'View photo ' + n) + '<span class="sr"> (the label photo)</span></a>';
+  }
+  function photoOf(p, n) { return p.photos.filter(function (ph) { return ph.n === n; })[0] || {}; }
+  var COUNT = { 2: 'two', 3: 'three', 4: 'four', 5: 'five' };
+  /* the marks a label uses to point to a footnote */
+  var MARKS = /^[*†‡^]+/;
+  /* One facts panel, set the way a label sets it: the title, the serving
+     lines, heavy and light rules, the amount after each name, the % Daily
+     Value at the right, sub-rows indented, the footnotes. Every word is the
+     catalogue's, which is the label's. On a Nutrition Facts panel the calories
+     stand large and the heavy rule follows Protein; on a Supplement Facts panel
+     it comes before the ingredients that have no Daily Value (**). */
+  function factsPanel(pa, uid) {
+    var nf = /^Nutrition/.test(pa.title), rows = pa.rows.slice(), cal = null;
+    var dvCol = !!pa.header || rows.some(function (r) { return r.dv; });
+    if (nf && rows.length && rows[0].name === 'Calories') { cal = rows.shift(); }
+    var bar = -1;
+    rows.forEach(function (r, i) {
+      if (bar < 0 && (nf ? i > 0 && rows[i - 1].name === 'Protein' : r.dv === '**')) { bar = i; }
+    });
+    function line(r) {
+      /* the line as printed where that differs from name + amount: either the
+         whole line ("Includes 0g Added Sugars") or the name alone ("Vitamin B₆") */
+      if (r.printed && r.amount && r.printed.indexOf(r.amount) >= 0) { return esc(r.printed); }
+      var name = esc(r.printed || r.name);
+      if (nf && !r.indent && (bar < 0 || rows.indexOf(r) < bar)) { name = '<b>' + name + '</b>'; }
+      return dvCol ? name + (r.amount ? ' <span class="nf-a">' + esc(r.amount) + '</span>' : '') : name;
+    }
+    var serving = [pa.serving_size ? '<p class="nf-ss">' + esc(pa.serving_size) + '</p>' : '', pa.servings ? '<p class="nf-sp">' + esc(pa.servings) + '</p>' : ''];
+    if (nf) { serving.reverse(); }
+    var head = dvCol
+      ? '<thead><tr><th scope="col">' + (pa.header && !nf ? esc(pa.header.amount) : '<span class="sr">Nutrient and amount</span>') + '</th>' +
+        '<th scope="col" class="nf-dv">' + (pa.header ? esc(pa.header.dv) : '') + '</th></tr></thead>'
+      : '<thead class="sr"><tr><th scope="col">Name</th><th scope="col">Amount</th></tr></thead>';
+    return '<section class="nf' + (nf ? ' is-nf' : ' is-sf') + (dvCol ? '' : ' no-dv') + '" aria-labelledby="' + uid + '-t">' +
+      '<h3 class="nf-t" id="' + uid + '-t">' + esc(pa.title) + '</h3>' +
+      (pa.subtitle ? '<p class="nf-sub">' + esc(pa.subtitle) + '</p>' : '') + serving.join('') +
+      (cal ? '<div class="nf-calb"><p class="nf-aps">' + esc(pa.header ? pa.header.amount : '') + '</p><p class="nf-cal"><span>Calories</span> <span>' + esc(cal.amount) + '</span></p></div>' : '') +
+      '<table class="nf-tb"><caption class="sr">' + esc(pa.title) + (pa.serving_size ? ', ' + esc(pa.serving_size) : '') + '</caption>' + head + '<tbody>' +
+        rows.map(function (r, i) {
+          return '<tr class="' + ['i' + (r.indent || 0), i === bar ? 'bar' : ''].join(' ').trim() + '"><th scope="row">' + line(r) + '</th>' +
+            '<td' + (dvCol ? ' class="nf-dv"' : ' class="nf-a"') + '>' + esc(dvCol ? r.dv : r.amount) + '</td></tr>';
+        }).join('') + '</tbody></table>' +
+      '<div class="nf-fn">' + pa.footnotes.map(function (f) { return '<p>' + esc(f) + '</p>'; }).join('') + '</div>' +
+    '</section>';
+  }
+  /* The label as text: its facts panels, its ingredients, and its allergen,
+     facility and warning statements, each as printed and tied to the photo it
+     was read from. Only complete statements are shown, and a line too blurred
+     to set out is named (never quoted) so the page never implies the label has
+     no such line. A product with no verified transcription shows none of this. */
+  var KINDS = ['allergen', 'facility', 'warning'];
+  /* "the notices", or where the photos hide some, "the notices we could read in full" */
+  function readable(p) { return p.withheld ? ' we could read in full' : ''; }
+  function labelSection(p, L, root) {
+    var lb = L.labels && L.labels[p.id];
+    if (!lb) { return ''; }
+    var others = lb.statements.filter(function (s) { return s.complete && s.kind === 'other' && !s.items; });
+    var panels = lb.panels.map(function (pa, i) {
+      /* a mark printed in this panel's rows that its own footnotes don't
+         explain is explained by a line the label prints beside the panel
+         ("†Upcycled"): set under the box, never inside it */
+      var beside = others.filter(function (s) {
+        var m = MARKS.exec(s.text);
+        return m && pa.rows.some(function (r) { return r.name.indexOf(m[0]) >= 0; }) &&
+          !pa.footnotes.some(function (f) { return f.indexOf(m[0]) === 0; });
+      }).map(function (s) { return '<p class="lab-src lab-beside">Printed beside the panel: “' + esc(s.text) + '”</p>'; }).join('');
+      var next = lb.panels[i + 1];
+      return factsPanel(pa, p.id + '-p' + i) + beside + (next && next.photo === pa.photo ? '' :
+        '<p class="lab-src">Transcribed from the label in photo ' + pa.photo + '. If anything here differs, the label is right. ' +
+          photoLink(p, pa.photo, root, null, photoOf(p, pa.photo).panel) + '</p>');
+    }).join('');
+    var ing = lb.ingredients;
+    var where = ing && (ing.heading ? 'Printed under “' + esc(ing.heading) + '”.' : (/^Back of the bag/.test(photoOf(p, ing.photo).alt || '') ? 'Printed on the back of the bag.' : ''));
+    var side = ing ? '<div class="lab-b"><h3 class="lab-h">Ingredients</h3><blockquote class="lab-q"><p>' + esc(ing.text) + '</p></blockquote>' +
+      '<p class="lab-src">' + (where ? where + ' ' : '') + photoLink(p, ing.photo, root) + '</p></div>' : '';
+    var notes = lb.statements.filter(function (s) { return s.complete && KINDS.indexOf(s.kind) >= 0; })
+      .sort(function (a, b) { return KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind); });
+    var wh = p.withheld;
+    var held = !wh ? '' : '<p class="lab-held">' + (wh.items.length > 1
+      ? 'The package also prints ' + (COUNT[wh.items.length] || wh.items.length) + ' more lines: ' + esc(wh.items.slice(0, -1).join('; ')) + '; and ' + esc(wh.items[wh.items.length - 1]) +
+        '. They are ' + esc(wh.why) + ', so read them on the package.'
+      : 'The package also prints ' + esc(wh.items[0]) + ', ' + esc(wh.why) + '. Read it on the package.') + '</p><p class="lab-src">' + photoLink(p, wh.photo, root) + '</p>';
+    if (notes.length || held) {
+      side += '<div class="lab-b lab-warn"><h3 class="lab-h">' + (notes.length && notes[0].kind === 'allergen' ? 'Allergens and notices' : 'Notices') + '</h3>' +
+        (notes.length ? '<ul class="lab-n">' + notes.map(function (s) {
+          return '<li><blockquote class="lab-q"><p>“' + esc(s.text) + '”</p></blockquote><p class="lab-src">' + photoLink(p, s.photo, root) + '</p></li>';
+        }).join('') + '</ul>' : '') + held + '</div>';
+    }
+    /* the package's own marks, word for word: set as printed tokens, apart
+       from the shop's sage filter chips */
+    var marks = lb.statements.filter(function (s) { return s.complete && s.items; });
+    if (marks.length) {
+      side += '<div class="lab-b"><h3 class="lab-h">Marks on the package</h3><p class="lab-lead">As printed, word for word:</p>' + marks.map(function (s) {
+        return '<ul class="tags is-printed">' + s.items.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+          '<p class="lab-src">' + photoLink(p, s.photo, root) + '</p>';
+      }).join('') + '</div>';
+    }
+    return '<section class="sec lab" id="label" aria-labelledby="label-h">' +
+      '<div class="sec-h"><div><p class="eyebrow">From the label</p><h2 class="h2" id="label-h">The label, as text</h2>' +
+        '<p class="sec-p">The facts panel' + (lb.panels.length > 1 ? 's' : '') + ', the ingredients, and the allergen, facility and warning notices' + readable(p) +
+          ', as the package prints them.</p></div></div>' +
+      '<div class="lab-g"><div class="lab-panels">' + panels + '</div><div class="lab-side">' + side + '</div></div></section>';
+  }
+
+  /* the four categories as picture tiles, each with what it holds here: the
+     not-found page's way back into the shop */
+  function catTiles(L, root) {
+    var n = counts(L);
+    return '<ul class="ctiles">' + L.categories.map(function (c) {
+      var k = n[c.id] || 0;
+      return '<li><a class="ctile" href="' + esc(shopHref(root, 'c', c.id)) + '">' +
+        '<span class="ctile-m">' + pic('cat-' + c.id, root, { sizes: '(min-width: 1360px) 310px, (min-width: 760px) 23vw, 46vw', alt: '' }) + '</span>' +
+        '<span class="ctile-n">' + esc(c.name) + '</span><span class="ctile-s">' + (k ? items(k) + ' here' : NOT_HERE) + '</span></a></li>';
+    }).join('') + '</ul>';
+  }
+
+  /* ── a product page's main content ────────────────────────────────────── */
+  function accordion(p, L) {
+    var acc = [], lb = L.labels && L.labels[p.id];
+    acc.push({ t: 'From the label', h:
+      '<ul>' + p.facts.map(function (f) { return '<li><b>' + esc(f[0]) + ':</b> ' + esc(f[1]) + '</li>'; }).join('') +
+      '<li><b>' + esc(p.date.kind) + ':</b> ' + esc(p.date.text) + ' (printed ' + esc(p.date.printed) + ')</li></ul>' +
+      p.notes.map(function (x) { return '<p class="note">' + esc(x) + '</p>'; }).join('') +
+      (lb
+        ? '<p class="acc-more">The full ' + esc(lb.panels[0].title.toLowerCase()) + ' panel, the ingredients and the label’s notices' + readable(p) + ' are <a href="#label">set out as text below</a>.</p>'
+        : '<p class="acc-more">The photos show the full ' + (/supplement/i.test(p.photos.map(function (x) { return x.alt; }).join(' ')) ? 'supplement' : 'nutrition') +
+          ' facts panel and the rest of the package.</p>') });
+    /* the ingredients appear once: as printed, in the label section, when it exists */
+    if (p.ingredients && !(lb && lb.ingredients)) {
+      acc.push({ t: 'Ingredients', h: '<p class="acc-lead">As listed on the label, ' + p.ingredients.length + ' in all:</p><ul>' +
+        p.ingredients.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' });
+    }
+    acc.push({ t: 'Buying, delivery and returns', h:
+      '<p class="acc-lead">As listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + ':</p>' + listingDl(L) +
+      '<p class="acc-more">You pay on eBay, and the listing is what applies to your purchase, so check it before you buy. ' +
+      'Questions about this item can be asked through “Contact seller” on the listing.</p>' });
+    acc.push({ t: 'Where these details come from', h:
+      '<p>The product facts on this page are transcribed from the package label in the photos; if anything here differs from the label on the package, the label is right. ' +
+      'The price, condition, shipping and returns are as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + '. ' +
+      'This page makes no health claims, and nothing on it is medical advice.</p>' });
+    /* Every panel is open in the HTML, so all of it is there without scripts;
+       the script folds all but the first. */
+    return '<div class="acc">' + acc.map(function (a, i) {
+      return '<div class="acc-i"><h2 class="acc-h"><button class="acc-b" type="button" id="acc-b' + i + '" aria-expanded="true" aria-controls="acc-p' + i + '">' +
+        esc(a.t) + ICON.plus + '</button></h2>' +
+        '<div class="acc-p is-open" id="acc-p' + i + '" role="region" aria-labelledby="acc-b' + i + '"><div><div class="in">' + a.h + '</div></div></div></div>';
+    }).join('') + '</div>';
+  }
+
+  /* a row of cards that scrolls sideways, with arrow buttons; nothing moves by itself */
+  function row(id, title, list, root, tail) {
+    return '<section class="sec rowsec" aria-labelledby="' + id + '-h">' +
+      '<div class="sec-h"><h2 class="h2" id="' + id + '-h">' + esc(title) + '</h2>' +
+        '<div class="row-nav js-only"><button class="rn" type="button" data-dir="-1" aria-controls="' + id + '-r" aria-label="Scroll back">' + ICON.prev + '</button>' +
+        '<button class="rn" type="button" data-dir="1" aria-controls="' + id + '-r" aria-label="Scroll on">' + ICON.next + '</button></div></div>' +
+      '<div class="row" id="' + id + '-r">' + cards(list, root) + '</div>' + (tail || '') + '</section>';
+  }
+
+  /* The gallery's last card: how buying works, in three lines, with the two
+     ways on. Designed in the page, not a picture; shown by the viewer only
+     (without scripts the buy box beside the photos says all of it). */
+  function closingCard(p, L, root) {
+    return '<div class="sbuy js-only" id="stage-buy" hidden data-dated>' +
+      '<p class="sbuy-t">Choose here. Buy on eBay.</p>' +
+      '<ol class="sbuy-l">' +
+        '<li><span>Sold through our eBay store, ' + STORE_NAME + '.</span></li>' +
+        '<li><span><span class="price">' + money(p.price) + '</span> as listed on eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span>.</span></li>' +
+        '<li><span>Product facts from the package’s own label.</span></li>' +
+      '</ol>' +
+      '<a class="sbuy-more" href="' + esc(root) + 'help.html">How buying works</a>' +
+      '<p class="sbuy-a">' + ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s', 'opens the eBay listing for the ' + fullName(p) + ' in a new tab') +
+        '<a class="btn btn-2 btn-s" href="' + esc(root) + 'help.html">How buying works</a></p>' +
+    '</div>';
+  }
+  /* On phones, once the buy box has scrolled away, a slim bar with the
+     package, its name, the price, its check date and Buy on eBay (shown by the
+     script; hidden without it). */
+  function buyBar(p, L, root) {
+    return '<aside class="bbar js-only" id="bbar" aria-label="Buy the ' + esc(fullName(p)) + '" data-dated><div class="bbar-in">' +
+      (p.pack ? '<img class="bbar-im" src="' + esc(pack(p, true, root)) + '" alt="" width="480" height="600" loading="lazy" decoding="async">' : '') +
+      '<p class="bbar-p"><span class="bbar-n">' + esc(fullName(p)) + '</span><span class="price">' + money(p.price) + '</span><span class="bbar-w">On eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span></span></p>' +
+      ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s bbar-b', 'opens the eBay listing for the ' + fullName(p) + ' in a new tab') +
+    '</div></aside>';
+  }
+
+  function productMain(p, L, root) {
+    var sl = slides(p, root), first = sl[0];
+    var size = /^(.*) \((.*)\)$/.exec(p.size.text) || [p.size.text, p.size.text, ''];
+    var others = L.products.filter(function (x) { return x.id !== p.id; });
+    var cat = catOf(L, p.category);
+    var kv = [
+      ['Size', esc(size[1]) + (size[2] ? ' <small>' + esc(size[2]) + '</small>' : '')],
+      ['Servings', esc(servingsText(p)) + ' <small>per bag</small>'],
+      ['Protein', p.protein + ' g <small>per serving</small>'],
+      ['Flavor', esc(p.flavor)]
+    ];
+    if (p.facet.source && p.facet.source.length) { kv.push(['Protein from', esc(p.facet.source.join(', '))]); }
+    kv.push([esc(p.date.kind), esc(p.date.text) + ' <small>printed ' + esc(p.date.printed) + '</small>']);
+    return '<nav aria-label="Breadcrumb"><ol class="crumbs">' +
+        '<li><a href="' + esc(root) + 'index.html">Home</a></li>' +
+        '<li><a href="' + esc(root) + 'shop.html">Shop</a></li>' +
+        '<li><a href="' + esc(shopHref(root, 'c', p.category)) + '">' + esc(cat ? cat.name : '') + '</a></li>' +
+        '<li><a href="' + esc(shopHref(root, 'q', p.brand)) + '">' + esc(p.brand) + '</a></li>' +
+        '<li aria-current="page">' + esc(p.name) + '</li></ol></nav>' +
+      '<div class="pdp" data-product="' + esc(p.id) + '">' +
+        '<div class="gal">' +
+          /* the photo first, then its thumbnails, which is also the order on a
+             phone; on wide screens the thumbnails are placed to its left */
+          /* the picture and its controls: on wide screens the controls sit on
+             the picture's corner, on phones in a row under it */
+          '<div class="stage-w">' +
+          '<div class="stage" id="stage" tabindex="0" role="group" aria-roledescription="picture viewer" aria-label="Pictures of the ' + esc(fullName(p)) + ' package">' +
+            '<img id="stage-img" class="is-shown' + (first.kind === 'pack' ? ' is-pack' : '') + '" src="' + esc(first.src) + '" alt="' + esc(first.alt) + '" width="' + first.w + '" height="' + first.h + '" decoding="async" fetchpriority="high">' +
+            '<div class="ph-state" id="stage-fail" hidden><div>This photo didn’t load.<br><button class="btn btn-2 btn-s" type="button" id="stage-retry">Try again</button></div></div>' +
+            closingCard(p, L, root) +
+            '<div class="stage-bar" id="stage-bar" aria-hidden="true"></div>' +
+            '<span class="stage-count js-only" id="stage-count" aria-hidden="true">' + esc(first.count) + '</span>' +
+          '</div>' +
+            '<div class="stage-nav">' +
+              '<button class="js-only" type="button" id="prev" aria-label="Previous picture">' + ICON.prev + '</button><button class="js-only" type="button" id="next" aria-label="Next picture">' + ICON.next + '</button>' +
+              '<a id="full" href="' + esc(first.src) + '" target="_blank" rel="noopener">' + ICON.zoom + 'Full size<span class="sr"> (opens the picture in a new tab)</span></a>' +
+            '</div>' +
+          '</div>' +
+          /* without scripts each thumbnail opens its full-size picture; with them
+             it shows the picture in the viewer, and the last shows how buying works */
+          '<ul class="thumbs" aria-label="Pictures">' + sl.map(function (s, i) {
+            return '<li><a class="thumb" href="' + esc(s.src) + '" data-i="' + i + '" aria-current="' + (i === 0) + '" aria-label="' + esc(s.label) + '">' +
+              '<img src="' + esc(s.thumb) + '" alt="" width="' + s.tw + '" height="' + s.th + '" loading="lazy" decoding="async"></a></li>';
+          }).join('') +
+            '<li class="js-only"><a class="thumb thumb-buy" href="#stage" data-i="' + sl.length + '" aria-current="false" aria-label="How buying works">' +
+              '<span aria-hidden="true">' + ICON.steps + '</span></a></li>' +
+          '</ul>' +
+          '<p class="gal-note">' + esc(galNote(p)) + '</p>' +
+          '<p class="sr" id="stage-live" aria-live="polite"></p>' +
+        '</div>' +
+        '<div class="info">' +
+          '<h1><span class="brand-l">' + esc(p.brand) + '</span> ' + esc(p.name) + '</h1>' +
+          '<p class="sub">' + esc(p.flavor) + ' · ' + esc(p.size.text) + '</p>' +
+          '<p class="summary">' + esc(p.summary) + '</p>' +
+          '<div class="buy" data-dated>' +
+            '<p class="buy-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
+            '<p class="when">Listed on eBay, checked ' + esc(checkedOf(p, L)) + '. eBay shows the current price and availability.</p>' +
+            '<a class="btn btn-1" id="buy" href="' + esc(p.ebay.url) + '" target="_blank" rel="noopener">Buy on eBay ' + ICON.ne + '<span class="sr"> (opens the eBay listing in a new tab)</span></a>' +
+            '<p class="how">You’ll complete your purchase on eBay. <a href="' + esc(root) + 'help.html">How buying works</a></p>' +
+            '<p class="buy-store">' + esc(NOTICE) + ' ' + storeLink('Visit the store') + '</p>' +
+          '</div>' +
+          '<h2 class="h-s">Key info</h2>' +
+          '<dl class="kv">' + kv.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') +
+            '<div data-dated><dt>Per serving</dt><dd>' + esc(perServing(p).replace('about ', 'About ')) + ' <small>listed price ÷ ' + esc(servingsText(p).toLowerCase()) + ' servings, checked ' + esc(checkedOf(p, L)) + '</small></dd></div>' +
+          '</dl>' +
+          (p.label.length ? '<h2 class="h-s">The label says</h2><ul class="tags">' + p.label.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
+          accordion(p, L) +
+        '</div>' +
+      '</div>' +
+      labelSection(p, L, root) +
+      (others.length ? row('more', 'More in the shop', others, root,
+        '<p class="foot-note">' + esc(priceNote(L)) + ' <a href="' + esc(root) + 'shop.html">See the whole shop</a></p>') : '') +
+      buyBar(p, L, root);
+  }
+
+  /* ── the shop's search ─────────────────────────────────────────────────
+     Every word of a search must be a word of what a product's page says (or
+     its plural): "nut" finds "tree nuts", not "nutrition". Only when no
+     product has every word whole does a word count as the start of one, so
+     a search still finds as it is typed ("choc", "veg"). A free-from search ("no nuts", "nut free", "dairy-free", "without
+     soy", "free of gluten", "non-GMO") is different: it never goes by the
+     words on a page, which also hold "Contains tree nuts" and the
+     ingredients. It finds only a product whose own package prints that it is
+     free of exactly that (its `free` list), and leaves out any whose label
+     also names it, or its family, as an allergen or in its facility line. */
+  function fold(s) {
+    s = String(s == null ? '' : s).toLowerCase().replace(/[’'`]/g, '');
+    return s.normalize ? s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '') : s;
+  }
+  function words(s) { return fold(s).split(/[^a-z0-9]+/).filter(Boolean); }
+  /* one form for a word and its plural: "nuts" is "nut", "sugars" is "sugar" */
+  function one(w) { return w.length > 3 && /s$/.test(w) && !/ss$/.test(w) ? w.slice(0, -1) : w; }
+  function stem(s) { return words(s).map(one).join(' '); }
+  var NEG = { no: 1, without: 1, non: 1, zero: 1 };
+  var JOIN = { and: 1, or: 1 };
+  /* a free-from term's wider family, used only to leave a product out */
+  var KIN = { gluten: ['wheat'], dairy: ['milk'], whey: ['milk', 'dairy'], nut: ['peanut', 'tree nut'] };
+  /* how each printed claim is named in the shop */
+  var SAY = { gmo: 'Non-GMO', 'added sugar': 'No added sugars', 'artificial flavor': 'No artificial flavors', 'artificial sweetener': 'No artificial sweeteners',
+    'seed oil': 'No seed oils', preservative: 'No preservatives', stevia: 'No stevia', rbst: 'rBST free', rbgh: 'rBGH free' };
+  function say(t) { return SAY[t] || t.charAt(0).toUpperCase() + t.slice(1) + ' free'; }
+  function searchIndex(L) {
+    var list = L.products.map(function (p) {
+      var cat = catOf(L, p.category), lb = L.labels && L.labels[p.id];
+      var hay = [p.brand, p.name, p.flavor, p.summary, cat && cat.name, p.size.text,
+        (p.facts || []).map(function (f) { return f.join(' '); }).join(' '),
+        (p.ingredients || []).join(' '), (p.label || []).join(' '), (p.notes || []).join(' '),
+        p.facet.flavor.join(' '), p.facet.source.join(' '), p.facet.label.join(' '),
+        /* the label as printed: its ingredients, allergen statement and marks */
+        lb && lb.ingredients ? lb.ingredients.text : '',
+        lb ? lb.statements.filter(function (s) { return s.complete && (s.kind === 'allergen' || s.items); }).map(function (s) { return s.text; }).join(' ') : ''].join(' ');
+      var hazard = (lb ? lb.statements.filter(function (s) { return s.kind === 'allergen' || s.kind === 'facility'; }).map(function (s) { return s.text; }) : [])
+        .concat((p.notes || []).filter(function (x) { return /contain/i.test(x); })).join(' ');
+      return { id: p.id, hay: ' ' + words(hay).join(' ') + ' ', free: (p.free || []).map(stem), hazard: ' ' + words(hazard).map(one).join(' ') + ' ' };
+    });
+    var vocab = [];
+    list.forEach(function (x) { x.free.forEach(function (t) { if (vocab.indexOf(t) < 0) { vocab.push(t); } }); });
+    return { list: list, vocab: vocab };
+  }
+  /* A search, read: the free-from terms it names and its other words. */
+  function parseQuery(q, IX) {
+    var w = words(q), used = w.map(function () { return false; }), free = [];
+    /* the longest run of up to three words at `at`, read onward (dir 1) or
+       back (dir -1), that a package prints as a free-from term; else one word */
+    function term(at, dir) {
+      for (var k = 3; k >= 1; k--) {
+        var a = dir > 0 ? at : at - k + 1, b = a + k;
+        if (a < 0 || b > w.length || used.slice(a, b).some(Boolean)) { continue; }
+        var t = w.slice(a, b).map(one).join(' ');
+        if (IX.vocab.indexOf(t) >= 0 || (k === 1 && !JOIN[w[a]] && !NEG[w[a]] && w[a] !== 'free')) { return { a: a, b: b, t: t }; }
+      }
+      return null;
+    }
+    function take(r) { for (var i = r.a; i < r.b; i++) { used[i] = true; } free.push(r.t); }
+    /* "X free", "X and Y free", "X-free" */
+    w.forEach(function (x, f) {
+      if (x !== 'free' || used[f] || w[f + 1] === 'of' || w[f + 1] === 'from') { return; }
+      var pos = f - 1, got = false, r;
+      while ((r = term(pos, -1))) {
+        take(r); got = true; pos = r.a - 1;
+        if (pos > 0 && JOIN[w[pos]] && !used[pos]) { used[pos] = true; pos--; } else { break; }
+      }
+      if (got) { used[f] = true; }
+    });
+    /* "no X", "no X or Y", "without X", "non-X", "free of X", "free from X" */
+    w.forEach(function (x, n) {
+      if (used[n]) { return; }
+      var start = NEG[x] ? n + 1 : (x === 'free' && (w[n + 1] === 'of' || w[n + 1] === 'from') ? n + 2 : -1);
+      if (start < 0) { return; }
+      var pos = start, got = false, r;
+      while (pos < w.length && (r = term(pos, 1))) {
+        take(r); got = true; pos = r.b;
+        if (pos < w.length - 1 && JOIN[w[pos]] && !used[pos]) { used[pos] = true; pos++; } else { break; }
+      }
+      if (got) { for (var i = n; i < start; i++) { used[i] = true; } }
+    });
+    var Q = { q: q, free: free, tokens: w.filter(function (x, i) { return !used[i]; }), whole: true };
+    /* whole words where any product has them all; otherwise word starts */
+    Q.whole = IX.list.some(function (x) { return hit(x, Q); });
+    return Q;
+  }
+  function hasWord(hay, t, whole) {
+    return whole ? hay.indexOf(' ' + t + ' ') >= 0 || hay.indexOf(' ' + t + 's ') >= 0 || hay.indexOf(' ' + t + 'es ') >= 0 : hay.indexOf(' ' + t) >= 0;
+  }
+  function hit(x, Q) {
+    if (!Q.tokens.every(function (t) { return hasWord(x.hay, t, Q.whole); })) { return false; }
+    return Q.free.every(function (t) {
+      return x.free.indexOf(t) >= 0 && ![t].concat(KIN[t] || []).some(function (k) { return x.hazard.indexOf(' ' + k + ' ') >= 0; });
+    });
+  }
+  function searchHit(IX, Q, id) {
+    var x = IX.list.filter(function (e) { return e.id === id; })[0];
+    return !!x && hit(x, Q);
+  }
+  /* every free-from claim the packages here print, with how many products a
+     search for it finds: what the shop offers when a free-from search finds none */
+  function freeClaims(IX) {
+    return IX.vocab.map(function (t) {
+      var Q = { free: [t], tokens: [], whole: true };
+      return { t: t, say: say(t), n: IX.list.filter(function (x) { return searchHit(IX, Q, x.id); }).length };
+    }).filter(function (c) { return c.n; });
+  }
+
+  function pageTitle(p) { return fullName(p) + ', ' + p.flavor + ' — Venerabull Life'; }
+  function pageDescription(p, L) {
+    return p.summary + ' ' + money(p.price) + ' on eBay when checked ' + checkedOf(p, L) + '; bought through the eBay listing.';
+  }
+
+  var R = {
+    STORE: STORE, STORE_NAME: STORE_NAME, NOTICE: NOTICE, NOT_HERE: NOT_HERE, DIRECTIONS: DIRECTIONS, HELP: HELP, DIRECTIONS_NOTE: DIRECTIONS_NOTE, IMG: IMG,
+    checkedOf: checkedOf, checkedAll: checkedAll, storeTile: storeTile,
+    esc: esc, money: money, perServing: perServing, servingsText: servingsText, fullName: fullName, items: items,
+    productHref: productHref, photo: photo, catOf: catOf, counts: counts, brands: brands, facetValues: facetValues, facetLabel: facetLabel,
+    ICON: ICON, ext: ext, storeLink: storeLink, pic: pic, status: status,
+    notice: notice, header: header, footer: footer, shopPanel: shopPanel, menuSheet: menuSheet,
+    card: card, cards: cards, row: row, priceNote: priceNote, cmpTable: cmpTable, cmpNote: cmpNote, howListing: howListing, listingDl: listingDl,
+    intro: intro, homeChips: homeChips, homeCats: homeCats, productMain: productMain, pageTitle: pageTitle, pageDescription: pageDescription,
+    pack: pack, slides: slides, galNote: galNote, factsPanel: factsPanel, labelSection: labelSection, catTiles: catTiles,
+    fold: fold, words: words, searchIndex: searchIndex, parseQuery: parseQuery, searchHit: searchHit, freeClaims: freeClaims
+  };
+  g.LIFE_RENDER = R;
+  if (typeof module !== 'undefined' && module.exports) { module.exports = R; }
+}(typeof window !== 'undefined' ? window : globalThis));
