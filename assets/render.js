@@ -383,7 +383,7 @@
         return '<th scope="col" role="columnheader">' + h + '</th>'; }).join('') + '</tr></thead><tbody role="rowgroup">' +
       L.products.map(function (p) {
         function td(l, v, num) { return '<td' + (num ? ' class="num"' : '') + ' role="cell" data-l="' + l + '">' + v + '</td>'; }
-        return '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '">' + esc(fullName(p)).replace(/ \+ /g, '&nbsp;+&nbsp;').replace(/(\S+-\S+)/g, '<span class="nw">$1</span>') + '</a><small>' + glue(p.flavor) + '</small></th>' +
+        return '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '">' + esc(fullName(p)).replace(/ \+ /g, '&nbsp;+&nbsp;').replace(/(\S)-(\S)/g, '$1\u2011$2') + '</a><small>' + glue(p.flavor) + '</small></th>' +
           td('Size', p.bundle ? esc(count(p)) + ' <small>' + glue(p.bundle.each) + '&nbsp;each</small>' : esc(p.size.text).replace(/\(([^)]*)\)/, '<span class="nw">($1)</span>')) +
           td('Servings', esc(servingsText(p)) + (p.bundle ? '&nbsp;in&nbsp;all <small>' + p.bundle.servings + '&nbsp;per&nbsp;' + esc(p.bundle.unit) + '</small>' : ''), true) + td('Protein', p.protein + ' g', true) +
           td('Listed price', money(p.price), true) + td('Per serving', esc(perServing(p)), true) +
@@ -395,9 +395,11 @@
     return 'As listed when the listings were checked on ' + termsAll(L) + ': ' + L.listing.shipping.toLowerCase() +
       ', item located in ' + day(L.listing.from) + '. ' + L.listing.returns;
   }
+  /* a term's last two words held together, so it never ends on one word alone */
+  function tail(s) { return String(s).replace(/ (\S+)$/, '\u00a0$1'); }
   function listingDl(L) {
-    return '<dl class="listing"><dt>Condition</dt><dd>' + esc(L.listing.condition) + '</dd><dt>Shipping</dt><dd>' + esc(L.listing.shipping) + '</dd>' +
-      '<dt>Item location</dt><dd>' + esc(day(L.listing.from)) + '</dd><dt>Returns</dt><dd>' + esc(L.listing.returns) + '</dd></dl>';
+    return '<dl class="listing"><dt>Condition</dt><dd>' + esc(L.listing.condition) + '</dd><dt>Shipping</dt><dd>' + esc(tail(L.listing.shipping)) + '</dd>' +
+      '<dt>Item location</dt><dd>' + esc(day(L.listing.from)) + '</dd><dt>Returns</dt><dd>' + esc(tail(L.listing.returns)) + '</dd></dl>';
   }
   function intro(L) {
     var cat = L.categories.filter(function (c) { return counts(L)[c.id]; }).map(function (c) { return c.name.toLowerCase().replace('&', 'and'); });
@@ -724,8 +726,9 @@
         '<div class="info">' +
           '<h1><span class="brand-l">' + esc(p.brand) + '</span> ' + esc(p.name) + '</h1>' +
           '<p class="sub">' + glue(p.flavor) + '&nbsp;· ' + (p.bundle ? esc(count(p)) + ', <span class="nw">' + esc(p.bundle.each) + ' each</span>' : esc(p.size.text)) + '</p>' +
-          /* a figure never parts from its unit at a line’s end ("20 g", "6 g"), nor "7-serving" at its hyphen */
-          '<p class="summary">' + glue(p.summary).replace(/(\d+-\w+)/g, '<span class="nw">$1</span>') + '</p>' +
+          /* a figure never parts from its unit at a line’s end ("20 g", "6 g", "39.6 oz bag"), nor a hyphenated word
+             at its hyphen ("grass-fed", "7-serving": a non-breaking hyphen holds it, so the line can still wrap well) */
+          '<p class="summary">' + glue(p.summary).replace(/&nbsp;oz (bag|pouch)/g, '&nbsp;oz&nbsp;$1').replace(/(\S)-(\S)/g, '$1\u2011$2') + '</p>' +
           '<div class="buy" data-dated>' +
             '<p class="buy-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
             (p.bundle ? '<p class="buy-unit">The price is for ' + esc(thing(p)) + '.</p>' : '') +

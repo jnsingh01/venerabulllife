@@ -362,10 +362,11 @@ window.LIFE = {
       /* no packshot: in its one original photo of the front the bag touches the
          photo's top edge, and a packshot never shows a cut bag as whole, so the
          cards and gallery show that photo itself */
-      /* where a narrow card crops photo 1, the crop centres on the bag (Vision's box
-         x 7-474 of 720): at 320 the card shows 108 px of the 180 px-wide photo, and
-         object-position (c·Wi − Wb/2)/(Wi − Wb) puts the bag's centre c mid-card */
-      cardX: '8%',
+      /* where a narrow card crops photo 1, the crop keeps the bag's printed front whole
+         (Vision's box, x 7-474 of 720, also takes in the bag's leaning top corner, so
+         its centre is no guide): 21% was chosen by rendering the 320 card, where it
+         keeps the printed front whole with a little of the room at each side */
+      cardX: '21%',
       photos: [
         { n: 1, alt: 'Front of the Just Ingredients Protein + Creatine Vanilla Peanut Butter bag on a counter' },
         { n: 2, alt: 'Back of the bag' },
