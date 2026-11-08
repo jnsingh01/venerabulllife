@@ -44,16 +44,20 @@
   /* "Equip’s", "Just Ingredients’": a brand's possessive, once per date however
      many of its products were checked that day */
   function possessive(b) { return b + (/s$/.test(b) ? '’' : '’s'); }
+  /* A brand whose listings were checked on more than one day is named with each
+     product's flavor ("Equip Chocolate’s on 7 Nov 2026"), so no date is read as
+     the whole brand's. */
   function checkedAll(L, of) {
-    var by = {}, order = [];
+    var by = {}, order = [], days = {};
     of = of || checkedOf;
+    L.products.forEach(function (p) { (days[p.brand] = days[p.brand] || {})[of(p, L)] = 1; });
     L.products.forEach(function (p) {
-      var d = of(p, L);
+      var d = of(p, L), who = possessive(Object.keys(days[p.brand]).length > 1 ? p.brand + ' ' + p.flavor : p.brand);
       if (d === L.checkedText) { return; }
       if (!by[d]) { by[d] = []; order.push(d); }
-      if (by[d].indexOf(possessive(p.brand)) < 0) { by[d].push(possessive(p.brand)); }
+      if (by[d].indexOf(who) < 0) { by[d].push(who); }
     });
-    return L.checkedText + (order.length ? ' (' + order.map(function (d) { return andList(by[d]) + ' on ' + d; }).join('; ') + ')' : '');
+    return day(L.checkedText) + (order.length ? ' (' + order.map(function (d) { return andList(by[d]) + ' on ' + day(d); }).join('; ') + ')' : '');
   }
   function termsAll(L) { return checkedAll(L, termsOf); }
   function andList(b) { return b.length > 1 ? b.slice(0, -1).join(', ') + ' and ' + b[b.length - 1] : b.join(''); }
@@ -65,6 +69,25 @@
   var PHOTO_DATE_NOTE = 'That date is the one printed on the bag in the photos. A bag bought through the current listing may carry a different date; ' +
     'to confirm it, ask through “Contact seller” on the listing.';
   function whose(p) { return p.date.photographed ? ' ' + PHOTO_DATE : ''; }
+  /* A date no photo shows (`date.none`: Equip's strawberry pouches print theirs
+     where these photos don't reach) is never set out as printed: the page says
+     the photos don't show it, and what the listing recorded, and when. */
+  function dateNote(p) {
+    var d = p.date, k = d.kind.toLowerCase();
+    return 'No ' + k.replace(/ /g, '-') + ' date can be read in these photos. When the listing was published on ' + day(d.listed.on) + ', its ' + (p.bundle ? p.bundle.units : 'bags') +
+      ' were recorded as ' + k + ' ' + day(d.listed.text) + '. To confirm the date on ' + (p.bundle ? 'a bundle' : 'a bag') + ' bought now, ask through “Contact seller” on the listing.';
+  }
+  /* A listing that sells several identical packages together (`bundle`: Equip's
+     two strawberry pouches): every page says how many and each one's size, and
+     the price, the servings and the per-serving price are the whole bundle's. */
+  function count(p) { return p.bundle.n + ' ' + p.bundle.units; }
+  /* what a packshot shows: "the bag", or for a bundle, "both pouches" */
+  function thing(p) { return p.bundle ? (p.bundle.n === 2 ? 'both ' : 'all ' + p.bundle.n + ' ') + p.bundle.units : 'the bag'; }
+  function cap1(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  /* "6 Nov 2026" in one piece in running text (a no-break space between its parts) */
+  function day(d) { return String(d || '').replace(/ /g, '\u00a0'); }
+  /* escaped text whose figures keep their units ("9.1 oz", "20 g") and whose "&" keeps its next word */
+  function glue(s) { return esc(s).replace(/(\d) (g|mg|oz|servings)\b/g, '$1&nbsp;$2').replace(/&amp; /g, '&amp;&nbsp;'); }
   function productHref(p, root) { return (root || '') + 'products/' + p.id + '.html'; }
   function photo(p, n, card, root) { return (root || '') + 'assets/img/' + p.id + '-' + n + (card ? '-card' : '') + '.jpg'; }
   /* the packshot: the package from one of its photos, on the plain ground */
@@ -76,18 +99,20 @@
      reduced by one matrix; the others keep their colors as photographed. Each
      says which, everywhere it is described. */
   function colors(p) {
-    return p.pack.balanced ? 'with the lamp’s color cast reduced; its colors are approximate'
-      : 'its colors are as photographed under a warm lamp, so they are approximate';
+    var its = p.bundle ? 'their' : 'its';
+    return p.pack.balanced ? 'with the lamp’s color cast reduced; ' + its + ' colors are approximate'
+      : its + ' colors are as photographed under a warm lamp, so they are approximate';
   }
   function slides(p, root) {
     var N = p.photos.length, out = [];
     if (p.pack) {
       out.push({ kind: 'pack', n: p.pack.photo, src: pack(p, false, root), thumb: pack(p, true, root), w: p.pack.w, h: p.pack.h, tw: 480, th: 600,
-        alt: 'The ' + named(p) + ' bag from photo ' + p.pack.photo + ', lifted onto a plain ground' + (p.pack.balanced ? ' ' : '; ') + colors(p),
+        alt: (p.bundle ? cap1(thing(p)) + ' of the ' + named(p) + ' bundle' : 'The ' + named(p) + ' bag') + ' from photo ' + p.pack.photo + ', lifted onto a plain ground' +
+          (p.pack.balanced ? ' ' : '; ') + colors(p),
         /* the viewer's caption: its counter already says "From photo N" */
-        cap: 'The bag, lifted onto a plain ground' + (p.pack.balanced ? ' with the lamp’s color cast reduced. Its colors are approximate.'
-          : '. Its colors are as photographed under a warm lamp, so they are approximate.'),
-        count: 'From photo ' + p.pack.photo, label: 'The bag from photo ' + p.pack.photo + ', on a plain ground; colors approximate' });
+        cap: cap1(thing(p)) + ', lifted onto a plain ground' + (p.pack.balanced ? ' with the lamp’s color cast reduced. ' + (p.bundle ? 'Their' : 'Its') + ' colors are approximate.'
+          : '. ' + (p.bundle ? 'Their' : 'Its') + ' colors are as photographed under a warm lamp, so they are approximate.'),
+        count: 'From photo ' + p.pack.photo, label: cap1(thing(p)) + ' from photo ' + p.pack.photo + ', on a plain ground; colors approximate' });
     }
     p.photos.forEach(function (ph, i) {
       out.push({ kind: 'photo', n: ph.n, src: photo(p, ph.n, false, root), thumb: photo(p, ph.n, true, root), w: 720, h: 1280, tw: 405, th: 720,
@@ -97,9 +122,12 @@
   }
   /* what the first picture is, and what the rest are */
   function galNote(p) {
-    var N = p.photos.length, rest = (N === 2 ? 'Photos 1 and 2 are' : 'Photos 1 to ' + N + ' are') + ' the package as photographed, front and back.';
+    /* a bundle says what each photo shows (its photos needn't show every package
+       from both sides) */
+    var N = p.photos.length, rest = p.bundle && p.bundle.photos ? p.bundle.photos
+      : (N === 2 ? 'Photos 1 and 2 are' : 'Photos 1 to ' + N + ' are') + ' the package as photographed, front and back.';
     if (!p.pack) { return 'Photos of the actual package, front and back.'; }
-    return 'The first picture is the bag from photo ' + p.pack.photo + ', lifted onto a plain ground' + (p.pack.balanced ? ' ' : '; ') + colors(p) + '. ' + rest;
+    return 'The first picture is ' + thing(p) + ' from photo ' + p.pack.photo + ', lifted onto a plain ground' + (p.pack.balanced ? ' ' : '; ') + colors(p) + '. ' + rest;
   }
   function catOf(L, id) { return L.categories.filter(function (c) { return c.id === id; })[0] || null; }
   function counts(L) {
@@ -317,14 +345,18 @@
       ? '<img src="' + esc(pack(p, true, root)) + '" srcset="' + esc(pack(p, true, root)) + ' 480w, ' + esc(pack(p, false, root)) + ' ' + p.pack.w + 'w"' +
         ' sizes="(min-width: 1100px) 330px, (min-width: 760px) 34vw, (min-width: 560px) 46vw, 74vw" alt="" width="480" height="600" loading="lazy" decoding="async">'
       : '<img src="' + esc(photo(p, 1, true, root)) + '" srcset="' + esc(photo(p, 1, true, root)) + ' 405w, ' + esc(photo(p, 1, false, root)) + ' 720w"' +
-        ' sizes="(min-width: 1100px) 330px, (min-width: 760px) 34vw, (min-width: 560px) 46vw, 74vw" alt="" width="405" height="720" loading="lazy" decoding="async">';
+        ' sizes="(min-width: 1100px) 330px, (min-width: 760px) 34vw, (min-width: 560px) 46vw, 74vw" alt="" width="405" height="720" loading="lazy" decoding="async"' +
+        /* where a narrow card crops the photo, it keeps the package (its centre across the photo, cardX) */
+        (p.cardX ? ' style="object-position:' + esc(p.cardX) + ' 50%"' : '') + '>';
     return '<article class="card" data-id="' + esc(p.id) + '" data-dated>' +
       '<div class="ph' + (p.pack ? ' is-pack' : '') + '">' + im + '<span class="fail">Photo didn’t load</span></div>' +
       '<div class="card-b">' +
         '<p class="card-brand">' + esc(p.brand) + '</p>' +
         '<h3 class="card-name"><a class="card-a" href="' + esc(productHref(p, root)) + '"><span class="sr">' + esc(p.brand) + ' </span>' + esc(p.name) + (twin(p) ? '<span class="sr">, ' + esc(p.flavor) + '</span>' : '') + '</a></h3>' +
-        '<p class="card-sub">' + esc(p.flavor) + ' · <span class="nw">' + esc(p.size.text) + '</span></p>' +
-        '<p class="card-facts">' + p.protein + ' g protein · ' + esc(servingsText(p).replace('About', 'about')) + ' servings</p>' +
+        '<p class="card-sub">' + glue(p.flavor) + '&nbsp;· ' + (p.bundle
+          ? '<span class="nw">' + esc(count(p)) + '</span>, <span class="nw">' + esc(p.bundle.each) + '</span> each'
+          : '<span class="nw">' + esc(p.size.text) + '</span>') + '</p>' +
+        '<p class="card-facts">' + p.protein + '&nbsp;g protein · ' + esc(servingsText(p).replace('About', 'about')).replace(/ /g, '&nbsp;') + '&nbsp;servings' + (p.bundle ? '&nbsp;in&nbsp;all' : '') + '</p>' +
         '<p class="card-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
         '<p class="card-when">On eBay, checked <span class="nw">' + esc(checkedOf(p)) + '</span></p>' +
         '<div class="card-foot"><span class="card-go" aria-hidden="true">View ' + ICON.arrow + '</span>' +
@@ -339,7 +371,10 @@
       '<span class="stile-t">Everything we sell is in our eBay store.</span>' +
       '<span class="stile-go">Visit the store' + ICON.ne + '</span><span class="sr"> (opens our eBay store in a new tab)</span></a>';
   }
-  function priceNote(L) { return 'Prices are the listed eBay prices, checked ' + checkedAll(L) + '. Per-serving prices are the listed price divided by the servings on the label. eBay shows the current price and availability.'; }
+  function priceNote(L) {
+    return 'Prices are the listed eBay prices, checked ' + checkedAll(L) + '. Per-serving prices are the listed price divided by the servings on the label' +
+      (L.products.some(function (p) { return p.bundle; }) ? ' (for a bundle, every package’s servings together)' : '') + '. eBay shows the current price and availability.';
+  }
 
   /* ── the shop's written sections ──────────────────────────────────────── */
   function cmpTable(L, root) {
@@ -348,19 +383,21 @@
         return '<th scope="col" role="columnheader">' + h + '</th>'; }).join('') + '</tr></thead><tbody role="rowgroup">' +
       L.products.map(function (p) {
         function td(l, v, num) { return '<td' + (num ? ' class="num"' : '') + ' role="cell" data-l="' + l + '">' + v + '</td>'; }
-        return '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '">' + esc(fullName(p)) + '</a><small>' + esc(p.flavor) + '</small></th>' +
-          td('Size', esc(p.size.text).replace(/\(([^)]*)\)/, '<span class="nw">($1)</span>')) + td('Servings', esc(servingsText(p)), true) + td('Protein', p.protein + ' g', true) +
-          td('Listed price', money(p.price), true) + td('Per serving', esc(perServing(p)), true) + td('Date on the bag', esc(p.date.kind + ' ' + p.date.text + (p.date.photographed ? ', ' + PHOTO_DATE : ''))) + '</tr>';
+        return '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '">' + esc(fullName(p)).replace(/ \+ /g, '&nbsp;+&nbsp;').replace(/(\S+-\S+)/g, '<span class="nw">$1</span>') + '</a><small>' + glue(p.flavor) + '</small></th>' +
+          td('Size', p.bundle ? esc(count(p)) + ' <small>' + glue(p.bundle.each) + '&nbsp;each</small>' : esc(p.size.text).replace(/\(([^)]*)\)/, '<span class="nw">($1)</span>')) +
+          td('Servings', esc(servingsText(p)) + (p.bundle ? '&nbsp;in&nbsp;all <small>' + p.bundle.servings + '&nbsp;per&nbsp;' + esc(p.bundle.unit) + '</small>' : ''), true) + td('Protein', p.protein + ' g', true) +
+          td('Listed price', money(p.price), true) + td('Per serving', esc(perServing(p)), true) +
+          td('Date on the bag', p.date.none ? 'Not shown in the photos' : esc(p.date.kind + ' ' + day(p.date.text) + (p.date.photographed ? (', ' + PHOTO_DATE).replace(/ (\S+)$/, '\u00a0$1') : ''))) + '</tr>';
       }).join('') + '</tbody>';
   }
   function cmpNote(L) { return 'Listed prices as checked on eBay on ' + checkedAll(L) + '. eBay shows the current price and availability.'; }
   function howListing(L) {
     return 'As listed when the listings were checked on ' + termsAll(L) + ': ' + L.listing.shipping.toLowerCase() +
-      ', item located in ' + L.listing.from + '. ' + L.listing.returns;
+      ', item located in ' + day(L.listing.from) + '. ' + L.listing.returns;
   }
   function listingDl(L) {
     return '<dl class="listing"><dt>Condition</dt><dd>' + esc(L.listing.condition) + '</dd><dt>Shipping</dt><dd>' + esc(L.listing.shipping) + '</dd>' +
-      '<dt>Item location</dt><dd>' + esc(L.listing.from) + '</dd><dt>Returns</dt><dd>' + esc(L.listing.returns) + '</dd></dl>';
+      '<dt>Item location</dt><dd>' + esc(day(L.listing.from)) + '</dd><dt>Returns</dt><dd>' + esc(L.listing.returns) + '</dd></dl>';
   }
   function intro(L) {
     var cat = L.categories.filter(function (c) { return counts(L)[c.id]; }).map(function (c) { return c.name.toLowerCase().replace('&', 'and'); });
@@ -446,18 +483,37 @@
       (cal ? '<div class="nf-calb"><p class="nf-aps">' + esc(pa.header ? pa.header.amount : '') + '</p><p class="nf-cal"><span>Calories</span> <span>' + esc(cal.amount) + '</span></p></div>' : '') +
       '<table class="nf-tb"><caption class="sr">' + esc(pa.title) + (pa.serving_size ? ', ' + esc(pa.serving_size) : '') + '</caption>' + head + '<tbody>' +
         rows.map(function (r, i) {
+          /* a % Daily Value the package prints but the photo can't show legibly
+             (dv: null) is a dash, never a blank, which would read as "none printed" */
+          var cell = dvCol && r.dv === null ? '<span aria-hidden="true">—</span><span class="sr">not legible in the photo</span>' : esc(dvCol ? r.dv : r.amount);
           return '<tr class="' + ['i' + (r.indent || 0), i === bar ? 'bar' : ''].join(' ').trim() + '"><th scope="row">' + line(r) + '</th>' +
-            '<td' + (dvCol ? ' class="nf-dv"' : ' class="nf-a"') + '>' + esc(dvCol ? r.dv : r.amount) + '</td></tr>';
+            '<td' + (dvCol ? ' class="nf-dv' + (r.dv === null ? ' nf-ur' : '') + '"' : ' class="nf-a"') + '>' + cell + '</td></tr>';
         }).join('') + '</tbody></table>' +
       '<div class="nf-fn">' + pa.footnotes.map(function (f) { return '<p>' + esc(f) + '</p>'; }).join('') + '</div>' +
     '</section>';
   }
+  /* a panel read in part: some figure is printed but not legible in the photo */
+  function partial(pa) { return pa.complete === false || pa.rows.some(function (r) { return r.dv === null; }); }
   /* The label as text: its facts panels, its ingredients, and its allergen,
      facility and warning statements, each as printed and tied to the photo it
      was read from. Only complete statements are shown, and a line too blurred
      to set out is named (never quoted) so the page never implies the label has
      no such line. A product with no verified transcription shows none of this. */
   var KINDS = ['allergen', 'facility', 'warning'];
+  /* the label section's first line names only what it sets out: the panels, the ingredients if read, and each kind of
+     notice it holds ("the facility and warning notices", "the warning notice") */
+  /* "the facility and warning notices", "the warning notice we could read in full", or '' where the page shows none */
+  function notices(p, lb) {
+    var kinds = KINDS.filter(function (k) { return lb.statements.some(function (s) { return s.complete && s.kind === k; }); });
+    var n = lb.statements.filter(function (s) { return s.complete && KINDS.indexOf(s.kind) >= 0; }).length;
+    return kinds.length ? 'the ' + andList(kinds) + ' notice' + (n > 1 ? 's' : '') + readable(p) : '';
+  }
+  function labIntro(p, lb) {
+    var parts = ['the facts panel' + (lb.panels.length > 1 ? 's' : '')];
+    if (lb.ingredients) { parts.push('the ingredients'); }
+    if (notices(p, lb)) { parts.push(notices(p, lb)); }
+    return cap1(andList(parts)) + ', as the package prints ' + (parts.length > 1 || lb.panels.length > 1 ? 'them' : 'it') + '.';
+  }
   /* "the notices", or where the photos hide some, "the notices we could read in full" */
   function readable(p) { return p.withheld ? ' we could read in full' : ''; }
   function labelSection(p, L, root) {
@@ -474,7 +530,14 @@
           !pa.footnotes.some(function (f) { return f.indexOf(m[0]) === 0; });
       }).map(function (s) { return '<p class="lab-src lab-beside">Printed beside the panel: “' + esc(s.text) + '”</p>'; }).join('');
       var next = lb.panels[i + 1];
-      return factsPanel(pa, p.id + '-p' + i) + beside + (next && next.photo === pa.photo ? '' :
+      var dashes = pa.rows.some(function (r) { return r.dv === null; })
+        ? '<p class="lab-src lab-beside">A dash marks a % Daily Value the package prints that can’t be read in this photo. Read it on the package.</p>' : '';
+      /* a mark in the panel ("<1%*") whose footnote the photo can't show legibly */
+      var mk = pa.rows.map(function (r) { return /[*†‡]+$/.exec(r.dv || '') ; }).filter(Boolean)[0];
+      if (mk && !pa.footnotes.some(function (f) { return f.indexOf(mk[0]) === 0; })) {
+        dashes += '<p class="lab-src lab-beside">The footnote its ' + esc(mk[0]) + ' points to can’t be read in this photo. Read it on the package.</p>';
+      }
+      return factsPanel(pa, p.id + '-p' + i) + beside + dashes + (next && next.photo === pa.photo ? '' :
         '<p class="lab-src">Transcribed from the label in photo ' + pa.photo + '. If anything here differs, the label is right. ' +
           photoLink(p, pa.photo, root, null, photoOf(p, pa.photo).panel) + '</p>');
     }).join('');
@@ -513,8 +576,7 @@
     }
     return '<section class="sec lab" id="label" aria-labelledby="label-h">' +
       '<div class="sec-h"><div><p class="eyebrow">From the label</p><h2 class="h2" id="label-h">The label, as text</h2>' +
-        '<p class="sec-p">The facts panel' + (lb.panels.length > 1 ? 's' : '') + ', the ingredients, and the allergen, facility and warning notices' + readable(p) +
-          ', as the package prints them.</p></div></div>' +
+        '<p class="sec-p">' + labIntro(p, lb) + '</p></div></div>' +
       '<div class="lab-g"><div class="lab-panels">' + panels + '</div><div class="lab-side">' + side + '</div></div></section>';
   }
 
@@ -535,10 +597,13 @@
     var acc = [], lb = L.labels && L.labels[p.id];
     acc.push({ t: 'From the label', h:
       '<ul>' + p.facts.map(function (f) { return '<li><b>' + esc(f[0]) + ':</b> ' + esc(f[1]) + '</li>'; }).join('') +
-      '<li><b>' + esc(p.date.kind) + ':</b> ' + esc(p.date.text) + ' (printed ' + esc(p.date.printed) + esc(whose(p)) + ')</li></ul>' +
-      p.notes.concat(p.date.photographed ? [PHOTO_DATE_NOTE] : []).map(function (x) { return '<p class="note">' + esc(x) + '</p>'; }).join('') +
+      (p.date.none ? '<li><b>' + esc(p.date.kind) + ':</b> not shown in these photos</li></ul>'
+        : '<li><b>' + esc(p.date.kind) + ':</b> ' + esc(p.date.text) + ' (printed ' + esc(p.date.printed) + esc(whose(p)) + ')</li></ul>') +
+      p.notes.concat(p.date.none ? [dateNote(p)] : p.date.photographed ? [PHOTO_DATE_NOTE] : []).map(function (x) { return '<p class="note">' + esc(x) + '</p>'; }).join('') +
       (lb
-        ? '<p class="acc-more">The full ' + esc(lb.panels[0].title.toLowerCase()) + ' panel, the ingredients and the label’s notices' + readable(p) + ' are <a href="#label">set out as text below</a>.</p>'
+        ? '<p class="acc-more">' + cap1(andList(['the ' + (lb.panels.some(partial) ? '' : 'full ') + esc(lb.panels[0].title.toLowerCase()) + ' panel']
+            .concat(lb.ingredients ? ['the ingredients'] : []).concat(notices(p, lb) ? [notices(p, lb)] : []))) +
+          ((lb.ingredients || notices(p, lb)) ? ' are' : ' is') + ' <a href="#label">set out as text below</a>.</p>'
         : '<p class="acc-more">The photos show the full ' + (/supplement/i.test(p.photos.map(function (x) { return x.alt; }).join(' ')) ? 'supplement' : 'nutrition') +
           ' facts panel and the rest of the package.</p>') });
     /* the ingredients appear once: as printed, in the label section, when it exists */
@@ -582,7 +647,7 @@
       '<p class="sbuy-t">Choose here. Buy on eBay.</p>' +
       '<ol class="sbuy-l">' +
         '<li><span>Sold through our eBay store, ' + STORE_NAME + '.</span></li>' +
-        '<li><span><span class="price">' + money(p.price) + '</span> as listed on eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span>.</span></li>' +
+        '<li><span><span class="price">' + money(p.price) + '</span> ' + (p.bundle ? 'for ' + esc(count(p)) + ', ' : '') + 'as listed on eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span>.</span></li>' +
         '<li><span>Product facts from the package’s own label.</span></li>' +
       '</ol>' +
       '<a class="sbuy-more" href="' + esc(root) + 'help.html">How buying works</a>' +
@@ -596,7 +661,7 @@
   function buyBar(p, L, root) {
     return '<aside class="bbar js-only" id="bbar" aria-label="Buy the ' + esc(named(p)) + '" data-dated><div class="bbar-in">' +
       (p.pack ? '<img class="bbar-im" src="' + esc(pack(p, true, root)) + '" alt="" width="480" height="600" loading="lazy" decoding="async">' : '') +
-      '<p class="bbar-p"><span class="bbar-n">' + esc(fullName(p)) + '</span><span class="price">' + money(p.price) + '</span><span class="bbar-w">On eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span></span></p>' +
+      '<p class="bbar-p"><span class="bbar-n">' + esc(fullName(p) + (p.bundle ? ', ' + count(p) : '')) + '</span><span class="price">' + money(p.price) + '</span><span class="bbar-w">On eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span></span></p>' +
       ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s bbar-b', 'opens the eBay listing for the ' + named(p) + ' in a new tab') +
     '</div></aside>';
   }
@@ -607,13 +672,18 @@
     var others = L.products.filter(function (x) { return x.id !== p.id; });
     var cat = catOf(L, p.category);
     var kv = [
-      ['Size', esc(size[1]) + (size[2] ? ' <small>' + esc(size[2]) + '</small>' : '')],
-      ['Servings', esc(servingsText(p)) + ' <small>per bag</small>'],
+      p.bundle ? ['Size', esc(count(p)) + ' <small><span class="nw">' + esc(p.bundle.each) + ' each;</span> <span class="nw">' + esc(p.bundle.total) + ' together</span></small>', 'kv-wide']
+        : ['Size', esc(size[1]) + (size[2] ? ' <small>' + esc(size[2]) + '</small>' : '')],
+      ['Servings', esc(servingsText(p)) + (p.bundle ? ' <small>in all, ' + p.bundle.servings + '&nbsp;per&nbsp;' + esc(p.bundle.unit) + '</small>' : ' <small>per bag</small>')],
       ['Protein', p.protein + ' g <small>per serving</small>'],
-      ['Flavor', esc(p.flavor)]
+      /* "Strawberries &" never parts from "Cream" */
+      ['Flavor', esc(p.flavor).replace('&amp; ', '&amp;&nbsp;')]
     ];
     if (p.facet.source && p.facet.source.length) { kv.push(['Protein from', esc(p.facet.source.join(', ')) + (p.sourceNote ? ' <small>' + esc(p.sourceNote) + '</small>' : '')]); }
-    kv.push([esc(p.date.kind), esc(p.date.text) + ' <small>printed ' + esc(p.date.printed) + esc(whose(p)) + '</small>']);
+    kv.push([esc(p.date.kind), p.date.none
+      ? 'Not shown in these&nbsp;photos <small>recorded as ' + esc(p.date.listed.text).replace(/^(\w+) (\d{4})/, '$1&nbsp;$2').replace(/ or later$/, ' or&nbsp;later') +
+        ' when listed on <span class="nw">' + esc(p.date.listed.on) + '</span></small>'
+      : esc(p.date.text).replace(/^(\w+) (\d+)/, '$1&nbsp;$2') + ' <small>printed ' + esc(p.date.printed) + esc(whose(p)).replace(/ photos$/, '&nbsp;photos') + '</small>']);
     return '<nav aria-label="Breadcrumb"><ol class="crumbs">' +
         '<li><a href="' + esc(root) + 'index.html">Home</a></li>' +
         '<li><a href="' + esc(root) + 'shop.html">Shop</a></li>' +
@@ -653,18 +723,23 @@
         '</div>' +
         '<div class="info">' +
           '<h1><span class="brand-l">' + esc(p.brand) + '</span> ' + esc(p.name) + '</h1>' +
-          '<p class="sub">' + esc(p.flavor) + ' · ' + esc(p.size.text) + '</p>' +
-          '<p class="summary">' + esc(p.summary) + '</p>' +
+          '<p class="sub">' + glue(p.flavor) + '&nbsp;· ' + (p.bundle ? esc(count(p)) + ', <span class="nw">' + esc(p.bundle.each) + ' each</span>' : esc(p.size.text)) + '</p>' +
+          /* a figure never parts from its unit at a line’s end ("20 g", "6 g"), nor "7-serving" at its hyphen */
+          '<p class="summary">' + glue(p.summary).replace(/(\d+-\w+)/g, '<span class="nw">$1</span>') + '</p>' +
           '<div class="buy" data-dated>' +
             '<p class="buy-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
+            (p.bundle ? '<p class="buy-unit">The price is for ' + esc(thing(p)) + '.</p>' : '') +
             '<p class="when">Listed on eBay, checked ' + esc(checkedOf(p, L)) + '. eBay shows the current price and availability.</p>' +
             '<a class="btn btn-1" id="buy" href="' + esc(p.ebay.url) + '" target="_blank" rel="noopener">Buy on eBay ' + ICON.ne + '<span class="sr"> (opens the eBay listing in a new tab)</span></a>' +
             '<p class="how">You’ll complete your purchase on eBay. <a href="' + esc(root) + 'help.html">How buying works</a></p>' +
             '<p class="buy-store">' + esc(NOTICE) + ' ' + storeLink('Visit the store') + '</p>' +
           '</div>' +
           '<h2 class="h-s">Key info</h2>' +
-          '<dl class="kv">' + kv.map(function (x) { return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') +
-            '<div data-dated><dt>Per serving</dt><dd>' + esc(perServing(p).replace('about ', 'About ')) + ' <small>listed price ÷ ' + esc(servingsText(p).toLowerCase()) + ' servings, checked ' + esc(checkedOf(p, L)) + '</small></dd></div>' +
+          /* a wide cell (the bundle's size) takes its row; the per-serving cell takes its row only when the cells before
+             it leave it alone in one */
+          '<dl class="kv">' + kv.map(function (x) { return '<div' + (x[2] ? ' class="' + x[2] + '"' : '') + '><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') +
+            '<div' + (kv.filter(function (x) { return !x[2]; }).length % 2 ? '' : ' class="kv-full"') + ' data-dated><dt>Per serving</dt><dd>' + esc(perServing(p).replace('about ', 'About ')) + ' <small>listed price' + (p.bundle ? ' for ' + esc(count(p)).replace(' ', '&nbsp;') : '') + ' ÷ ' +
+              esc(servingsText(p).toLowerCase()) + '&nbsp;servings, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span></small></dd></div>' +
           '</dl>' +
           (p.label.length ? '<h2 class="h-s">The label says</h2><ul class="tags">' + p.label.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
           accordion(p, L) +
@@ -700,12 +775,15 @@
   var KIN = { gluten: ['wheat'], dairy: ['milk'], whey: ['milk', 'dairy'], nut: ['peanut', 'tree nut'] };
   /* how each printed claim is named in the shop */
   var SAY = { gmo: 'Non-GMO', 'added sugar': 'No added sugars', 'artificial flavor': 'No artificial flavors', 'artificial sweetener': 'No artificial sweeteners',
-    'seed oil': 'No seed oils', preservative: 'No preservatives', stevia: 'No stevia', rbst: 'rBST free', rbgh: 'rBGH free' };
+    'seed oil': 'No seed oils', preservative: 'No preservatives', stevia: 'No stevia', rbst: 'rBST free', rbgh: 'rBGH free',
+    'natural flavor': 'No natural flavors', gum: 'No gums', filler: 'No fillers' };
   function say(t) { return SAY[t] || t.charAt(0).toUpperCase() + t.slice(1) + ' free'; }
   function searchIndex(L) {
     var list = L.products.map(function (p) {
       var cat = catOf(L, p.category), lb = L.labels && L.labels[p.id];
-      var hay = [p.brand, p.name, p.flavor, p.summary, cat && cat.name, p.size.text,
+      /* a bundle is found by the words its listing uses: its total, "2-pack", "bundle" */
+      var bundle = p.bundle ? [p.bundle.total, p.bundle.n + '-pack', 'pack bundle', ({ 2: 'two', 3: 'three' })[p.bundle.n] || ''].join(' ') : '';
+      var hay = [p.brand, p.name, p.flavor, p.summary, cat && cat.name, p.size.text, bundle,
         (p.facts || []).map(function (f) { return f.join(' '); }).join(' '),
         (p.ingredients || []).join(' '), (p.label || []).join(' '), (p.notes || []).join(' '),
         p.facet.flavor.join(' '), p.facet.source.join(' '), p.facet.label.join(' '),
@@ -762,8 +840,14 @@
     Q.whole = IX.list.some(function (x) { return hit(x, Q); });
     return Q;
   }
+  /* a word whole, or its plural; and "-ies" plurals both ways, so "strawberries"
+     finds a label that says "strawberry" and "strawberry" one that says "strawberries" */
   function hasWord(hay, t, whole) {
-    return whole ? hay.indexOf(' ' + t + ' ') >= 0 || hay.indexOf(' ' + t + 's ') >= 0 || hay.indexOf(' ' + t + 'es ') >= 0 : hay.indexOf(' ' + t) >= 0;
+    if (!whole) { return hay.indexOf(' ' + t) >= 0; }
+    var forms = [t, t + 's', t + 'es'];
+    if (t.length > 4 && /ies$/.test(t)) { forms.push(t.slice(0, -3) + 'y'); }
+    if (t.length > 3 && /[^aeiou]y$/.test(t)) { forms.push(t.slice(0, -1) + 'ies'); }
+    return forms.some(function (f) { return hay.indexOf(' ' + f + ' ') >= 0; });
   }
   function hit(x, Q) {
     if (!Q.tokens.every(function (t) { return hasWord(x.hay, t, Q.whole); })) { return false; }

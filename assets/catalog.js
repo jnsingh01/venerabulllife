@@ -362,11 +362,170 @@ window.LIFE = {
       /* no packshot: in its one original photo of the front the bag touches the
          photo's top edge, and a packshot never shows a cut bag as whole, so the
          cards and gallery show that photo itself */
+      /* where a narrow card crops photo 1, the crop centres on the bag (Vision's box
+         x 7-474 of 720): at 320 the card shows 108 px of the 180 px-wide photo, and
+         object-position (c·Wi − Wb/2)/(Wi − Wb) puts the bag's centre c mid-card */
+      cardX: '8%',
       photos: [
         { n: 1, alt: 'Front of the Just Ingredients Protein + Creatine Vanilla Peanut Butter bag on a counter' },
         { n: 2, alt: 'Back of the bag' },
         { n: 3, alt: 'Back of the bag, left side: the ingredients, and the date printed on this bag' },
         { n: 4, alt: 'Nutrition facts panel on the back of the bag', panel: [130, 360, 315, 585] }
+      ]
+    },
+    /* The three strawberry offers (8 Nov 2026): each listing's own photos and record,
+       nothing borrowed from another flavor of the same brand. */
+    {
+      id: 'equip-strawberry',
+      category: 'protein',
+      brand: 'Equip',
+      name: 'Prime Protein',
+      flavor: 'Strawberry',
+      summary: 'Two pouches of strawberry Prime Protein, made from grass-fed beef: 20 g of protein per serving and 10 servings in each pouch.',
+      /* sold as a bundle of two pouches: each pouch prints "NET WT. 9.1 OZ (0.57 LBS)
+         258 g" and "Servings Per Container 10"; the listing is "2-Pack Bundle 18.2 oz
+         Total", so the price, the servings and the per-serving price are both pouches' */
+      size: { text: '2 pouches, 9.1 oz (258 g) each', grams: 516 },
+      bundle: { n: 2, unit: 'pouch', units: 'pouches', each: '9.1 oz (258 g)', total: '18.2 oz (516 g)', servings: 10,
+                photos: 'Photo 1 shows both pouches from the front; photo 2, the back of one.' },
+      servings: { n: 20, about: false },
+      protein: 20,
+      facts: [
+        ['Protein', '20 g per serving'],
+        ['Servings', '10 per pouch, 20 in all'],
+        ['Made from', 'Grass-fed beef']
+      ],
+      ingredients: null,
+      label: ['Dairy free', 'Whey free', 'No added sugar'],
+      notes: [],
+      /* no date can be read in either photo (the lot code runs off the back's right
+         edge); the listing's publication record, 2 Nov 2026, gives August 2028 as the
+         earliest best-by date of the pouches then listed. sort '' puts it last under
+         "Date on the bag: latest" */
+      date: { kind: 'Best by', none: true, sort: '', listed: { text: 'August 2028 or later', on: '2 Nov 2026', sort: '2028-08' } },
+      facet: { flavor: ['Strawberry'], source: ['Beef'], label: ['Dairy free', 'No added sugars'] },
+      price: 39.99,
+      /* its own listing: the price checked on 6 Nov 2026; its condition and shipping
+         seen when it was published, on 2 Nov 2026 (location and returns are the store's) */
+      ebay: { item: '407332770108', url: 'https://www.ebay.com/itm/407332770108', checked: '2026-11-06', checkedText: '6 Nov 2026',
+              termsChecked: '2026-11-02', termsCheckedText: '2 Nov 2026' },
+      /* printed on this pouch: "NO WHEY, DAIRY, SOY, GLUTEN, OR SEED OILS." (back),
+         "DAIRY & WHEY FREE" and "NO ADDED SUGAR" (front). Never "artificial
+         sweeteners": that line is the chocolate bag's, not this one's */
+      free: ['whey', 'dairy', 'soy', 'gluten', 'seed oils', 'added sugar'],
+      /* the lines of photo 2 that run round the pouch's curve or blur there, named but
+         never quoted; the four % Daily Values printed at that edge are shown as dashes in
+         the panel itself */
+      withheld: { items: ['its ingredients list', 'its serving size, whose weight in grams can’t be read with certainty', 'its facts panel’s footnotes'],
+                  photo: 2, why: 'printed where the pouch curves away from the camera, too far round or too blurred to read in full in these photos' },
+      /* the packshot: both pouches lifted from photo 1 onto the plain ground, at
+         their native size (664x830; the pair is wider than tall, so 60% of the
+         frame's height), colours as photographed (balanced: false) */
+      pack: { photo: 1, w: 664, h: 830, balanced: false },
+      photos: [
+        { n: 1, alt: 'The two Equip Prime Protein strawberry pouches standing together on a shelf' },
+        { n: 2, alt: 'Back of one pouch: the supplement facts and the ingredients', panel: [500, 805, 205, 205] }
+      ]
+    },
+    {
+      id: 'ji-strawberries-cream',
+      category: 'protein',
+      brand: 'Just Ingredients',
+      name: 'Protein Powder',
+      flavor: 'Strawberries & Cream',
+      summary: 'Strawberries & cream protein powder: 20 g of protein per serving and 25 servings in a 39.6 oz bag. The label says no natural or artificial flavors.',
+      /* the label's "(2.4lb) (1,125g)" (photo 1, also photo 2) is certain; its ounce figure
+         sits in glare on a crease ("…6oz" certain), and the listing's title gives it: "LARGE
+         39.6 OZ … 2.4 LB 1125g" */
+      size: { text: '39.6 oz (1,125 g)', grams: 1125 },
+      servings: { n: 25, about: false },
+      protein: 20,
+      facts: [
+        ['Protein', '20 g per serving'],
+        ['Servings', '25 per bag'],
+        ['First ingredient', '“100% Grass-Fed Non-Denatured Whey Protein”, as printed']
+      ],
+      ingredients: null,
+      /* the back's certain claims (photos 4 to 6): NO NATURAL FLAVORS, NO ARTIFICIAL FLAVORS
+         OR SWEETENERS, GLUTEN FREE, and its icon row's EGG FREE, SOY FREE, NON GMO. Not the
+         front's caption, which lies in glare on a crease */
+      label: ['No natural flavors', 'No artificial flavors or sweeteners', 'Gluten free', 'Egg free', 'Soy free', 'Non-GMO'],
+      notes: ['Contains: coconut and dairy.'],
+      /* printed on the bag in the photos (photos 4 to 6); a bag bought through the
+         listing may carry another date, which isn't recorded */
+      date: { kind: 'Best by', text: 'February 25, 2028', printed: '02/25/2028', sort: '2028-02-25', photographed: true },
+      facet: { flavor: ['Strawberry'], source: ['Whey'], label: [] },
+      /* whey is the first ingredient, not the only protein: the back prints "PLANT AND
+         ANIMAL BASED – 4 SOURCES OF PROTEIN" */
+      sourceNote: 'listed first; the label says its protein is plant and animal based, from four sources',
+      price: 39.99,
+      ebay: { item: '407338430432', url: 'https://www.ebay.com/itm/407338430432', checked: '2026-11-06', checkedText: '6 Nov 2026',
+              termsChecked: '2026-11-03', termsCheckedText: '3 Nov 2026' },
+      /* each printed on this label: "NO NATURAL FLAVORS", "NO ARTIFICIAL FLAVORS OR SWEETENERS",
+         "NO GUMS, FILLERS, OR SYNTHETIC EMULSIFIERS" (only the emulsifiers called synthetic),
+         GLUTEN FREE, EGG FREE, SOY FREE, NON GMO */
+      free: ['natural flavors', 'artificial flavors', 'artificial sweeteners', 'gums', 'fillers', 'synthetic emulsifiers', 'gluten', 'egg', 'soy', 'gmo'],
+      /* the three lines too creased, shadowed or small to set out, named but never quoted:
+         a boxed warning (the page never implies the bag carries none), the maker's fine
+         print, the QR code's caption */
+      withheld: { items: ['a boxed warning at the bottom of the back', 'the maker’s details and fine print', 'the small print beside the QR code'],
+                  photo: 6, why: 'too creased, shadowed or small in these photos to set out here' },
+      /* the packshot: this package lifted from photo 2 (photo 1 clips its left edge)
+         onto the plain ground, at its native size (668x835), colours as photographed */
+      pack: { photo: 2, w: 668, h: 835, balanced: false },
+      photos: [
+        { n: 1, alt: 'Front of the Just Ingredients Strawberries & Cream bag on a counter' },
+        { n: 2, alt: 'The front of the bag, a second photo' },
+        { n: 3, alt: 'The front of the bag, at an angle' },
+        { n: 4, alt: 'Back of the bag' },
+        { n: 5, alt: 'Back of the bag, at an angle: the ingredients, and the lot and date printed on this bag' },
+        { n: 6, alt: 'Nutrition facts panel on the back of the bag', panel: [118, 470, 285, 475] }
+      ]
+    },
+    {
+      id: 'kachava-strawberry',
+      category: 'protein',
+      brand: 'Ka’Chava',
+      name: 'All-In-One Nutrition Shake',
+      flavor: 'Strawberry',
+      summary: 'A strawberry nutrition shake with 25 g of plant protein and 6 g of fiber per serving, in a 7-serving bag.',
+      /* the front's net-weight line is too soft to read with certainty; the listing's
+         title gives "15.31 oz 434g 7 Servings", and the panel bears it out: 7 servings
+         of 62 g, 434 g */
+      size: { text: '15.31 oz (434 g)', grams: 434 },
+      servings: { n: 7, about: false },
+      protein: 25,
+      facts: [
+        ['Protein', '25 g plant protein per serving'],
+        ['Fiber', '6 g per serving'],
+        ['Servings', '7 per bag'],
+        ['Vitamins & minerals', '26 listed on the package']
+      ],
+      ingredients: null,
+      label: [],
+      /* no allergen statement is legible in either photo, and one word of the
+         ingredients can't be read with certainty; the Vanilla bag's lines are never
+         borrowed */
+      notes: ['These photos show no allergen statement, and one word of the ingredients can’t be read in them. Check both on the package itself.'],
+      date: { kind: 'Best by', text: 'November 14, 2027', printed: '2027/11/14', sort: '2027-11-14', photographed: true },
+      /* Dairy free: the front's own "No Dairy" mark */
+      facet: { flavor: ['Strawberry'], source: ['Plant'], label: ['Dairy free'] },
+      price: 32.99,
+      ebay: { item: '407338466142', url: 'https://www.ebay.com/itm/407338466142', checked: '2026-11-06', checkedText: '6 Nov 2026',
+              termsChecked: '2026-11-03', termsCheckedText: '3 Nov 2026' },
+      /* the front's marks: No Gluten, No Dairy, No Soy, No Stevia, No Preservatives
+         Added, No Artificial Flavors or Sweeteners (no Non-GMO mark on this front) */
+      free: ['gluten', 'dairy', 'soy', 'stevia', 'preservatives', 'artificial flavors', 'artificial sweeteners'],
+      withheld: { items: ['its ingredients list, one word of which can’t be read with certainty', 'the footnote under its facts panel', 'the maker’s details under the panel'],
+                  photo: 2, why: 'too small or blurred in these photos to set out here' },
+      /* no packshot: its only photo of the front has the bag touching the photo's
+         left edge, and a packshot never shows a cut bag as whole */
+      /* where a narrow card crops photo 1, the crop centres on the bag (Vision's box
+         x 1-514 of 720; wider than a 320 card's 108 px, so it is trimmed evenly) */
+      cardX: '15%',
+      photos: [
+        { n: 1, alt: 'Front of the Ka’Chava Strawberry bag on a shelf' },
+        { n: 2, alt: 'Back of the bag: nutrition facts, the ingredients and the date printed on this bag', panel: [15, 370, 210, 660] }
       ]
     }
   ],
@@ -704,6 +863,222 @@ window.LIFE = {
         { photo: 3, also_in_photos: [2], kind: "other", text: "MADE WITH REAL INGREDIENTS • NO ARTIFICIAL FLAVORS • NO SUGAR ALCOHOLS OR ARTIFICIAL SWEETENERS LIKE SUCRALOSE • PROTEIN FROM REAL FOOD SOURCES –BOTH PLANT AND ANIMAL • NO SYNTHETIC GUMS, FILLERS, OR EMULSIFIERS", complete: true },
         { photo: 3, also_in_photos: [2], kind: "other", text: "We intentionally skip synthetic emulsifiers, gums, anti-caking agents, artificial flavors, and fillers. Because of that, you may notice natural settling or clumping when mixing, that’s normal.", complete: true },
         { photo: 3, also_in_photos: [2], kind: "other", text: "SOY FREE, NON GMO", items: ["SOY FREE", "NON GMO"], complete: false }
+      ]
+    },
+    'equip-strawberry': {
+      panels: [
+        {
+          photo: 2,
+          title: "Supplement Facts",
+          serving_size: null,
+          servings: "Servings Per Container 10",
+          header: { amount: "Amount per serving", dv: "% Daily Value" },
+          complete: false,
+          rows: [
+            { name: "Calories", amount: "110", dv: "", indent: 0 },
+            { name: "Total Fat", amount: "2 g", dv: null, indent: 0 },
+            { name: "Total Carbohydrate", amount: "1 g", dv: "<1%*", indent: 0 },
+            { name: "Protein", amount: "20 g", dv: "", indent: 0 },
+            { name: "Iron", amount: "1.1 mg", dv: null, indent: 0 },
+            { name: "Sodium", amount: "410 mg", dv: null, indent: 0 },
+            { name: "Potassium", amount: "100 mg", dv: null, indent: 0 }
+          ],
+          footnotes: []
+        }
+      ],
+      ingredients: null,
+      statements: [
+        {
+          photo: 2,
+          kind: "facility",
+          text: "Manufactured in a facility that also processes wheat, peanuts, tree nuts, soy, eggs, and sesame.",
+          complete: true
+        },
+        { photo: 2, kind: "warning", text: "NOTICE: USE THIS PRODUCT AS A FOOD SUPPLEMENT ONLY. DO NOT USE FOR WEIGHT REDUCTION.", complete: true },
+        {
+          photo: 2,
+          kind: "other",
+          text: "‡These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease.",
+          complete: true
+        },
+        {
+          photo: 2,
+          kind: "other",
+          text: "Product is packed by weight, not by volume. Natural settling may occur and cannot be avoided.",
+          complete: true
+        },
+        { photo: 2, kind: "other", text: "NO WHEY, DAIRY, SOY, GLUTEN, OR SEED OILS. SIMPLE INGREDIENTS, NOTHING UNNECESSARY.", complete: true },
+        { photo: 2, kind: "other", text: "THIRD-PARTY TESTED FOR HEAVY METALS, PESTICIDES, MICROPLASTICS, AND MORE", complete: true },
+        {
+          photo: 2,
+          kind: "other",
+          text: "GRASS-FED BEEF ISOLATE PROTEIN POWDER | DAIRY & WHEY FREE | SKIN, HAIR, & JOINT SUPPORT‡ | GUT FRIENDLY‡ | THIRD-PARTY TESTED",
+          complete: true
+        },
+        {
+          photo: 1,
+          kind: "other",
+          text: "GUT-FRIENDLY PROTEIN POWDER | DAIRY & WHEY FREE | SKIN, HAIR, & JOINT SUPPORT | NO ADDED SUGAR",
+          complete: false
+        },
+        { photo: 1, kind: "other", text: "ONE SCOOP EQUALS 20 g PROTEIN", complete: true },
+        { photo: 1, kind: "other", text: "MADE FROM GRASS-FED BEEF", complete: true }
+      ]
+    },
+    'ji-strawberries-cream': {
+      panels: [
+        {
+          photo: 6,
+          also_in_photos: [4, 5],
+          title: "Nutrition Facts",
+          serving_size: "Serving size 1 Scoop (45g)",
+          servings: "Servings Per Container: 25",
+          header: { amount: "Amount per serving", dv: "% Daily Value" },
+          complete: false,
+          rows: [
+            { name: "Calories", amount: "170", dv: "", indent: 0 },
+            { name: "Total Fat", amount: "5g", dv: "6%", indent: 0 },
+            { name: "Saturated Fat", amount: "4.5g", dv: "21%", indent: 1 },
+            { name: "Trans Fat", amount: "0g", dv: "", indent: 1 },
+            { name: "Cholesterol", amount: "35mg", dv: "12%", indent: 0 },
+            { name: "Sodium", amount: "135mg", dv: null, indent: 0 },
+            { name: "Total Carbohydrate", amount: "14g", dv: null, indent: 0 },
+            { name: "Dietary Fiber", amount: "<1g", dv: "2%", indent: 1 },
+            { name: "Total Sugars", amount: "8g", dv: "", indent: 1 },
+            { name: "Includes Added Sugars", amount: "0g", dv: "0%", indent: 2, printed: "Includes 0g Added Sugars" },
+            { name: "Protein", amount: "20g", dv: "33%", indent: 0 },
+            { name: "Vitamin D", amount: "0mcg", dv: "0%", indent: 0 },
+            { name: "Calcium", amount: "105mg", dv: null, indent: 0 },
+            { name: "Iron", amount: "0mg", dv: "0%", indent: 0 },
+            { name: "Potassium", amount: "130mg", dv: "2%", indent: 0 }
+          ],
+          footnotes: ["The % Daily Value tells you how much a nutrient in a serving of food contributes to a daily diet. 2000 calories a day is used for general nutrition advice."]
+        }
+      ],
+      ingredients: {
+        photo: 5,
+        also_in_photos: [4],
+        heading: "INGREDIENTS",
+        text: "100% Grass-Fed Non-Denatured Whey Protein, Organic Strawberry*, Organic Coconut Milk*, Grass-Fed Collagen, Organic Pea Protein, Organic Chia Seed Protein, Sea Salt, Organic Monk Fruit Extract, Organic Stevia Leaf Extract"
+      },
+      statements: [
+        { photo: 5, also_in_photos: [4], kind: "allergen", text: "CONTAINS COCONUT AND DAIRY", complete: true },
+        { photo: 5, also_in_photos: [4], kind: "other", text: "*With Tapioca Starch", complete: true },
+        {
+          photo: 1,
+          also_in_photos: [2, 3],
+          kind: "other",
+          text: "20g 20 Grams of Protein | Made with Real Food | 4 Sources of Protein",
+          items: ["20 Grams of Protein", "Made with Real Food", "4 Sources of Protein"],
+          complete: false
+        },
+        { photo: 1, also_in_photos: [2, 3], kind: "other", text: "NSF CERTIFIED", complete: true },
+        {
+          photo: 5,
+          also_in_photos: [4],
+          kind: "other",
+          text: "EGG FREE | SOY FREE | NON GMO",
+          items: ["EGG FREE", "SOY FREE", "NON GMO"],
+          complete: false
+        },
+        {
+          photo: 5,
+          also_in_photos: [4],
+          kind: "other",
+          text: "MADE WITH REAL INGREDIENTS • NO NATURAL FLAVORS • FLAVORED WITH REAL FOOD • NO ARTIFICIAL FLAVORS OR SWEETENERS • NO GUMS, FILLERS, OR SYNTHETIC EMULSIFIERS",
+          complete: true
+        },
+        {
+          photo: 4,
+          also_in_photos: [5, 6],
+          kind: "other",
+          text: "OPTIMALLY FORMULATED • PLANT AND ANIMAL BASED – 4 SOURCES OF PROTEIN FOR INCREASED ABSORPTION • 100% GRASS-FED NON-DENATURED WHEY FROM NEW ZEALAND & EUROPE • CONTAINS NUTRIENTS LIKE OMEGA 3S, TRYPTOPHAN, AND BCAAS",
+          complete: true
+        },
+        {
+          photo: 6,
+          also_in_photos: [4],
+          kind: "other",
+          text: "A GOOD FIT FOR ALL • GLUTEN FREE • CONTAINS BCAAS • GREAT FOR KIDS AND TEENS • CAN BE USED IN DRINKS, SMOOTHIES, BAKED GOODS, SAVORY DISHES, AND MORE",
+          complete: true
+        }
+      ]
+    },
+    'kachava-strawberry': {
+      panels: [
+        {
+          photo: 2,
+          title: "Nutrition Facts",
+          serving_size: "Serving Size 62g (2 scoops)",
+          servings: "7 Servings Per Container",
+          header: { amount: "Amount Per Serving", dv: "% Daily Value" },
+          complete: false,
+          rows: [
+            { name: "Calories", amount: "240", dv: "", indent: 0 },
+            { name: "Total Fat", amount: "5g", dv: "6%", indent: 0 },
+            { name: "Saturated Fat", amount: "2g", dv: "10%", indent: 1 },
+            { name: "Trans Fat", amount: "0g", dv: "", indent: 1 },
+            { name: "Cholesterol", amount: "0mg", dv: "0%", indent: 0 },
+            { name: "Sodium", amount: "413mg", dv: "18%", indent: 0 },
+            { name: "Total Carbohydrate", amount: "22g", dv: "8%", indent: 0 },
+            { name: "Dietary Fiber", amount: "6g", dv: "20%", indent: 1 },
+            { name: "Total Sugars", amount: "8g", dv: "", indent: 1 },
+            { name: "Includes Added Sugars", amount: "4g", dv: "8%", indent: 2 },
+            { name: "Protein", amount: "25g", dv: "38%", indent: 0 },
+            { name: "Vitamin D", amount: "5mcg", dv: "25%", indent: 0 },
+            { name: "Calcium", amount: "400mg", dv: "30%", indent: 0 },
+            { name: "Iron", amount: "4.5mg", dv: "25%", indent: 0 },
+            { name: "Potassium", amount: "300mg", dv: "6%", indent: 0 },
+            { name: "Vitamin A", amount: "750mcg", dv: "80%", indent: 0 },
+            { name: "Vitamin C", amount: "35mg", dv: "40%", indent: 0 },
+            { name: "Vitamin E", amount: "10mg", dv: "70%", indent: 0 },
+            { name: "Thiamin", amount: "0.75mg", dv: "60%", indent: 0 },
+            { name: "Riboflavin", amount: "0.85mg", dv: "70%", indent: 0 },
+            { name: "Niacin", amount: "10mg", dv: "60%", indent: 0 },
+            { name: "Vitamin B6", amount: "1mg", dv: "60%", indent: 0, printed: "Vitamin B₆" },
+            { name: "Folate", amount: "335mcg DFE (195mcg folic acid)", dv: "80%", indent: 0, printed: "Folate 335mcg DFE (195mcg folic acid)" },
+            { name: "Vitamin B12", amount: "3mcg", dv: "130%", indent: 0, printed: "Vitamin B₁₂" },
+            { name: "Biotin", amount: "75mcg", dv: "250%", indent: 0 },
+            { name: "Pantothenic Acid", amount: "5mg", dv: "100%", indent: 0 },
+            { name: "Phosphorus", amount: "400mg", dv: "30%", indent: 0 },
+            { name: "Iodine", amount: "75mcg", dv: "50%", indent: 0 },
+            { name: "Magnesium", amount: "200mg", dv: "50%", indent: 0 },
+            { name: "Zinc", amount: "10mg", dv: "90%", indent: 0 },
+            { name: "Selenium", amount: "65mcg", dv: "120%", indent: 0 },
+            { name: "Copper", amount: "0.8mg", dv: "90%", indent: 0 },
+            { name: "Manganese", amount: "1mg", dv: "45%", indent: 0 },
+            { name: "Chromium", amount: "35mcg", dv: "100%", indent: 0 },
+            { name: "Molybdenum", amount: "100mcg", dv: "220%", indent: 0 },
+            { name: "Chloride", amount: "300mg", dv: "15%", indent: 0 }
+          ],
+          footnotes: []
+        }
+      ],
+      ingredients: null,
+      statements: [
+        {
+          photo: 1,
+          kind: "other",
+          text: "No Gluten · No Dairy · No Soy · No Stevia · No Preservatives Added · No Artificial Flavors or Sweeteners",
+          items: ["No Gluten", "No Dairy", "No Soy", "No Stevia", "No Preservatives Added", "No Artificial Flavors or Sweeteners"],
+          complete: true
+        },
+        {
+          photo: 1,
+          kind: "other",
+          text: "25g Plant Protein | 26 Vitamins & Minerals | 6g Fiber",
+          items: ["25g Plant Protein", "26 Vitamins & Minerals", "6g Fiber"],
+          complete: false
+        },
+        {
+          photo: 2,
+          kind: "warning",
+          text: "NOTICE: Use this product as part of a well-balanced diet. Do not use this product as your only source of nutrition (max two servings daily).",
+          complete: true
+        },
+        { photo: 2, kind: "other", text: "Contains 5g of total fat per serving. See nutrition information for fat content.", complete: true },
+        { photo: 2, kind: "other", text: "Storage: Store in a cool, dry place.", complete: false },
+        { photo: 2, kind: "other", text: "MADE in the USA with ingredients from around the world", complete: true }
       ]
     }
   }

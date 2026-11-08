@@ -94,7 +94,7 @@ svg.ne { display: inline-block; flex: none; margin-left: .34em; position: relati
 .lede { font-size: clamp(1.0625rem, 1rem + .35vw, 1.25rem); line-height: 1.55; color: var(--ink-2); margin: 16px 0 0; max-width: 46ch; text-wrap: pretty; }
 .sec-p { color: var(--ink-2); margin: 14px 0 0; max-width: 58ch; text-wrap: pretty; }
 .fine { font-size: 13px; color: var(--ink-3); margin: 16px 0 0; }
-.foot-note { font-size: 13px; color: var(--ink-3); margin: 16px 0 0; max-width: 90ch; }
+.foot-note { font-size: 13px; color: var(--ink-3); margin: 16px 0 0; max-width: 90ch; text-wrap: pretty; }
 .foot-note a { color: var(--ink-2); text-underline-offset: 3px; }
 /* a picture of the site's own that failed to load: its tonal ground shows clean */
 img.is-failed { visibility: hidden; }
@@ -435,7 +435,7 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; a
 .ph.is-failed .fail { display: grid; }
 .card-b { display: flex; flex-direction: column; padding: 16px 18px 6px; flex: 1; }
 .card-brand { font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--bronze-d); margin: 0 0 4px; }
-.card-name { font-size: 17px; font-weight: 500; line-height: 1.3; letter-spacing: -.008em; margin: 0; }
+.card-name { font-size: 17px; font-weight: 500; line-height: 1.3; letter-spacing: -.008em; margin: 0; text-wrap: balance; }
 .card-a { color: inherit; text-decoration: none; }
 .card-a::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: var(--r); }
 .card-a:focus-visible { outline: none; }
@@ -464,6 +464,15 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; a
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 24px; }
 .shop .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* the store tile fills the rest of its row, so the grid never ends on a gap, whatever
+   the count of cards (three columns here, two on tablets, one on phones) */
+.shop .grid .stile:nth-child(3n+1) { grid-column: 1 / -1; }
+.shop .grid .stile:nth-child(3n+2) { grid-column: span 2; }
+/* spanning two cards' width and their height, the tile says its line as a banner, centred, not in its foot */
+@media (min-width: 1100px) {
+  .shop .grid .stile:nth-child(3n+2) { justify-content: center; align-items: center; text-align: center; padding: 48px; gap: 14px; }
+  .shop .grid .stile:nth-child(3n+2) .stile-t { font-size: clamp(1.9rem, 1.1rem + 1.3vw, 2.6rem); max-width: 18ch; }
+}
 /* the shop's last cell: the store itself */
 .stile {
   position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 10px; min-height: 220px;
@@ -530,7 +539,7 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; a
 .going-p::after { height: 78%; }
 .going-c { position: absolute; left: clamp(20px, 3vw, 40px); right: clamp(20px, 3vw, 40px); bottom: clamp(20px, 3vw, 36px); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .going-t { font-size: clamp(1.75rem, 1.1rem + 1.8vw, 2.9rem); font-weight: 300; letter-spacing: -.02em; line-height: 1.1; }
-.going-l { font-size: 16px; line-height: 1.45; max-width: 44ch; }
+.going-l { font-size: 16px; line-height: 1.45; max-width: 44ch; text-wrap: pretty; }
 /* side by side, each line keeps two lines' room, so the two titles share one line */
 @media (min-width: 900px) { .going-p:not(:first-child) .going-l { min-height: 2.9em; } }
 .going-go { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 500; transition: gap var(--t) var(--ease); }
@@ -555,11 +564,11 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; a
 [data-page="home"] .foot { margin-top: 0; }
 
 /* ── page headings (shop, help) ─────────────────────────────────────────── */
-.crumbs { display: flex; gap: 0; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-3); padding: 8px 0 0; margin: 0; list-style: none; }
+.crumbs { display: flex; gap: 0 6px; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-3); padding: 8px 0 0; margin: 0; list-style: none; }
 .crumbs a { color: var(--ink-2); text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
 .crumbs li { display: inline-flex; align-items: center; white-space: nowrap; }
-/* the separator ends its crumb, so a wrapped line never starts with one */
-.crumbs li:not(:last-child)::after { content: "/"; margin: 0 6px; color: var(--line-2); }
+/* the separator opens its crumb, so a line never ends on one; the row's column gap spaces it, so a wrapped line starts flush */
+.crumbs li + li::before { content: "/"; margin: 0 6px 0 0; color: var(--line-2); }
 @media (hover: hover) { .crumbs a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; } }
 .page-h { padding: clamp(20px, 3vw, 40px) 0 0; }
 .page-h h1 { font-size: clamp(2.6rem, 1.4rem + 3.6vw, 4.5rem); font-weight: 300; letter-spacing: -.022em; line-height: 1.02; margin: 0; }
@@ -694,13 +703,15 @@ html.enhanced [data-page="shop"] .search-t, html.enhanced [data-page="home"] .se
 .cmp th, .cmp td { text-align: left; padding: 16px 18px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .cmp thead th { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; background: var(--paper); }
 .cmp tbody tr:last-child th, .cmp tbody tr:last-child td { border-bottom: 0; }
-.cmp tbody th { position: sticky; left: 0; background: var(--card); font-weight: 500; min-width: 220px; z-index: 1; }
+.cmp tbody th { position: sticky; left: 0; background: var(--card); font-weight: 500; min-width: 220px; z-index: 1; text-wrap: balance; }
 .cmp tbody th a { text-decoration: none; }
 /* the name's link covers its whole cell (44 px and more to the touch) */
 .cmp tbody th a::after { content: ""; position: absolute; inset: 0; }
 .cmp tbody th a:focus-visible { outline: none; }
 .cmp tbody th a:focus-visible::after { outline: 2px solid var(--bronze); outline-offset: -3px; border-radius: 4px; }
 .cmp tbody th small { display: block; font-weight: 400; color: var(--ink-2); font-size: 13.5px; }
+/* a cell's own note (the bundle's "in all, 10 per pouch") under its figure, as the product's flavor sits under its name */
+.cmp td small { display: block; font-weight: 400; color: var(--ink-2); font-size: 13.5px; white-space: normal; }
 .cmp tbody tr { transition: background-color var(--t-fast) var(--ease); }
 .cmp td { white-space: nowrap; }
 @media (hover: hover) { .cmp tbody tr:hover, .cmp tbody tr:hover th { background: var(--paper); } .cmp tbody th a:hover { text-decoration: underline; text-underline-offset: 3px; } }
@@ -711,11 +722,11 @@ html.enhanced [data-page="shop"] .search-t, html.enhanced [data-page="home"] .se
   content: counter(s, decimal-leading-zero); display: block; font-size: 13px; font-weight: 600; letter-spacing: .1em; color: var(--bronze-d); margin-bottom: 14px;
 }
 .steps h3, .steps h2 { margin: 0 0 8px; font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
-.steps p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
+.steps p { margin: 0; color: var(--ink-2); font-size: 15.5px; text-wrap: pretty; }
 .steps p + p { margin-top: 12px; }
 .listing { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; margin: 12px 0 0; font-size: 15px; }
 .listing dt { color: var(--ink-3); }
-.listing dd { margin: 0; color: var(--ink); }
+.listing dd { margin: 0; color: var(--ink); text-wrap: pretty; }
 .listing-w p { margin: 0; }
 .listing-w { margin-bottom: 12px; }
 
@@ -781,6 +792,8 @@ html.enhanced [data-page="shop"] .search-t, html.enhanced [data-page="home"] .se
 .buy-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 0; }
 .buy-price .price { font-size: 34px; font-weight: 400; letter-spacing: -.015em; line-height: 1.1; }
 .buy-price .pps { font-size: 15px; color: var(--ink-2); }
+/* a bundle's price is for every package in it: said beside the price */
+.buy .buy-unit { font-size: 15px; color: var(--ink); margin: 8px 0 0; }
 .buy .when { font-size: 13.5px; color: var(--ink-3); margin: 6px 0 18px; }
 .buy .btn { width: 100%; }
 .buy .how { font-size: 14px; color: var(--ink-2); margin: 14px 0 0; }
@@ -796,10 +809,11 @@ html.enhanced [data-page="shop"] .search-t, html.enhanced [data-page="home"] .se
 .h-s { font-size: .75rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin: 32px 0 12px; }
 .kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin: 0; }
 .kv div { background: var(--card); padding: 14px 16px; }
-.kv div:last-child:nth-child(odd) { grid-column: 1 / -1; }
+/* a wide cell (the bundle's size), and the last cell when it would stand alone, take the whole row */
+.kv .kv-wide, .kv .kv-full { grid-column: 1 / -1; }
 .kv dt { font-size: 12.5px; color: var(--ink-3); margin: 0 0 3px; }
-.kv dd { margin: 0; font-weight: 500; font-size: 16px; }
-.kv dd small { display: block; font-weight: 400; color: var(--ink-2); font-size: 13px; line-height: 1.45; }
+.kv dd { margin: 0; font-weight: 500; font-size: 16px; text-wrap: pretty; }
+.kv dd small { display: block; font-weight: 400; color: var(--ink-2); font-size: 13px; line-height: 1.45; text-wrap: pretty; }
 .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .tags li { font-size: 14px; padding: 7px 14px; border-radius: 999px; background: var(--sage-bg); color: var(--sage-ink); }
 
@@ -823,7 +837,7 @@ html:not(.enhanced) .acc-b { cursor: default; }
 .acc-p .acc-lead { margin: 0 0 8px; }
 .acc-p .acc-more { margin: 12px 0 0; }
 .acc-p ul { margin: 0; padding-left: 18px; }
-.acc-p li { margin: 3px 0; }
+.acc-p li { margin: 3px 0; text-wrap: pretty; }
 .note { margin: 12px 0 0 !important; padding: 10px 14px; border-radius: var(--r-xs); background: var(--warn-bg); color: #5B4524; font-size: 14.5px; }
 
 /* the gallery: the thumbnails scroll inside the picture's own height */
@@ -976,7 +990,7 @@ html.enhanced .stage img { cursor: zoom-in; }
 .nf-ss { padding-bottom: 3px; }
 .is-nf .nf-sp { padding-top: 4px; border-top: 1px solid var(--ink); margin-top: 3px; }
 .is-nf .nf-ss { font-weight: 700; font-size: 15.5px; }
-.is-sf .nf-t + .nf-ss { border-top: 1px solid var(--ink); margin-top: 3px; padding-top: 3px; }
+.is-sf .nf-t + .nf-ss, .is-sf .nf-t + .nf-sp { border-top: 1px solid var(--ink); margin-top: 3px; padding-top: 3px; }
 .nf-calb { border-top: 10px solid var(--ink); border-bottom: 5px solid var(--ink); padding: 3px 0 4px; margin-top: 2px; }
 .nf-aps { margin: 0; font-size: 12.5px; font-weight: 700; }
 .nf-cal { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 28px; font-weight: 800; line-height: 1.1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
@@ -990,6 +1004,8 @@ html.enhanced .stage img { cursor: zoom-in; }
 .nf-tb tbody tr:first-child th, .nf-tb tbody tr:first-child td { border-top: 0; }
 .nf-tb .nf-dv { text-align: right; font-weight: 700; white-space: nowrap; padding-left: 14px; font-variant-numeric: tabular-nums; }
 .nf-tb thead .nf-dv { font-weight: 700; }
+/* a figure printed on the package but not legible in the photo: a quiet dash */
+.nf-tb .nf-ur { font-weight: 400; color: var(--ink-3); }
 .nf-tb td.nf-a { text-align: right; white-space: nowrap; padding-left: 14px; }
 .nf-a { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .nf-tb tr.i1 th { padding-left: 16px; }
@@ -998,7 +1014,7 @@ html.enhanced .stage img { cursor: zoom-in; }
 .nf-fn { border-top: 5px solid var(--ink); padding-top: 5px; font-size: 12px; line-height: 1.4; }
 .nf-fn p { margin: 0 0 3px; }
 .nf-fn p:last-child { margin-bottom: 0; }
-.lab-src { display: flex; flex-wrap: wrap; align-items: center; gap: 0 14px; margin: 10px 0 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+.lab-src { display: flex; flex-wrap: wrap; align-items: center; gap: 0 14px; margin: 10px 0 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; text-wrap: pretty; }
 .lab-ph {
   display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 500;
   color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; cursor: pointer;
@@ -1008,14 +1024,14 @@ html.enhanced .stage img { cursor: zoom-in; }
 .lab-b { max-width: 68ch; }
 .lab-b + .lab-b { margin-top: 34px; }
 .lab-panels .lab-beside { margin-top: -12px; }
-.lab-held { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid rgba(91,69,36,.18); font-size: 14.5px; line-height: 1.55; color: #5B4524; }
+.lab-held { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid rgba(91,69,36,.18); font-size: 14.5px; line-height: 1.55; color: #5B4524; text-wrap: pretty; }
 .lab-held + .lab-src { margin-top: 0; }
 .lab-lead { margin: -4px 0 12px; font-size: 13.5px; color: var(--ink-2); }
 /* the package's own marks, as printed: white tokens on a hairline, apart from
    the shop's sage filter chips */
 .tags.is-printed li { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--field); }
 .lab-h { margin: 0 0 12px; font-size: 18px; font-weight: 500; letter-spacing: -.01em; }
-.lab-q { margin: 0; padding: 2px 0 2px 16px; border-left: 2px solid var(--line-2); font-size: 15.5px; line-height: 1.6; color: var(--ink); overflow-wrap: anywhere; }
+.lab-q { margin: 0; padding: 2px 0 2px 16px; border-left: 2px solid var(--line-2); font-size: 15.5px; line-height: 1.6; color: var(--ink); overflow-wrap: anywhere; text-wrap: pretty; }
 .lab-q p { margin: 0; }
 .lab-warn { background: var(--warn-bg); border-radius: var(--r); padding: 22px 24px 12px; }
 .lab-warn .lab-q { border-left-color: rgba(91,69,36,.32); }
@@ -1174,7 +1190,7 @@ html.enhanced .stage img { cursor: zoom-in; }
 .dlink-m img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .dlink-b { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px; }
 .dlink-t { font-size: 24px; font-weight: 350; letter-spacing: -.015em; }
-.dlink-l { font-size: 15px; color: var(--ink-2); }
+.dlink-l { font-size: 15px; color: var(--ink-2); text-wrap: pretty; }
 .dlink-go { display: inline-flex; align-items: center; gap: 6px; font-size: 14.5px; margin-top: auto; transition: gap var(--t) var(--ease); }
 @media (hover: hover) { .dlink:hover { transform: translateY(-2px); box-shadow: var(--shadow-up); } .dlink:hover .dlink-go { gap: 10px; } }
 
@@ -1267,6 +1283,11 @@ html.enhanced .stage img { cursor: zoom-in; }
   .std { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   html.enhanced .shop-body { grid-template-columns: 212px minmax(0, 1fr); gap: 32px; }
   .shop .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shop .grid .stile:nth-child(3n+1), .shop .grid .stile:nth-child(3n+2) { grid-column: auto; }
+  .shop .grid .stile:nth-child(odd) { grid-column: 1 / -1; }
+}
+@media (min-width: 560px) and (max-width: 1099px) {
+  .shop .grid .stile:nth-child(odd) { justify-content: center; align-items: center; text-align: center; }
 }
 @media (max-width: 979px) {
   .nav { display: none; }
@@ -1326,6 +1347,7 @@ html.enhanced .stage img { cursor: zoom-in; }
   .buy > * { order: 6; }
   .buy > .buy-price { order: 3; margin-top: 10px; }
   .buy-price .price { font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.125rem); }
+  .buy > .buy-unit { order: 4; margin: 6px 0 0; font-size: 14px; line-height: 1.45; }
   .buy > .when { order: 4; margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; }
   .gal { order: 5; margin: 14px 0 0; position: static; grid-template-columns: 1fr; justify-items: center; }
   .buy > .btn { margin-top: 22px; }
@@ -1399,7 +1421,7 @@ html.enhanced .stage img { cursor: zoom-in; }
   .sec-h-end .lnk { display: none; }
   .dlink { grid-template-columns: 1fr; }
   .dlink-m { min-height: 0; aspect-ratio: 16 / 9; }
-  .kv { grid-template-columns: 1fr 1fr; }
+  .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .buy { padding: 20px; }
   .bigsearch input { height: 54px; padding-right: 16px; }
   .bigsearch .btn { display: none; }
@@ -1426,7 +1448,6 @@ html.enhanced .stage img { cursor: zoom-in; }
   .std h3 { margin: 2px 0 4px; }
   .cmp tbody th { min-width: 168px; }
   [data-page="product"] .crumbs li[aria-current] { display: none; }
-  [data-page="product"] .crumbs li:nth-last-child(2)::after { display: none; }
   .dhero .cap { top: 14px; bottom: auto; right: 14px; }
   .mood-rest .dir-items ol { grid-template-columns: 1fr; }
   /* the comparison stacks: one card per product, each figure under its label */
@@ -1440,6 +1461,9 @@ html.enhanced .stage img { cursor: zoom-in; }
   .cmp tbody th { position: relative; grid-column: 1 / -1; min-width: 0; padding: 0 0 12px; border-bottom: 1px solid var(--line); background: none; }
   .cmp td { display: block; padding: 0; border: 0; white-space: normal; }
   .cmp td::before { content: attr(data-l); display: block; font-size: 12.5px; color: var(--ink-3); margin-bottom: 1px; }
+  /* the size and the date take the card's width, so each sets whole and the four short figures pair between them:
+     servings with protein, the listed price with the price per serving */
+  .cmp td[data-l="Size"], .cmp td[data-l="Date on the bag"] { grid-column: 1 / -1; }
   .cmp tbody tr:last-child th { border-bottom: 1px solid var(--line); }
   .ctiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
   .lv-cap { font-size: 13.5px; }
