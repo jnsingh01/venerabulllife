@@ -452,10 +452,13 @@
     function matches(p, skip) {
       if (S.c && p.category !== S.c) { return false; }
       if (S.q && !R.searchHit(IX, query(), p.id)) { return false; }
+      /* within a group marked `every` (what the label says) a product must carry
+         every value chosen; within the others (flavors, sources) any of them */
       for (var k = 0; k < L.facets.length; k++) {
         var g = L.facets[k].id;
         if (g === skip || !S.f[g].length) { continue; }
-        if (!S.f[g].some(function (v) { return p.facet[g].indexOf(v) >= 0; })) { return false; }
+        var has = function (v) { return p.facet[g].indexOf(v) >= 0; };
+        if (L.facets[k].every ? !S.f[g].every(has) : !S.f[g].some(has)) { return false; }
       }
       return true;
     }
@@ -546,9 +549,13 @@
         if (!vals.length) { return ''; }
         return '<div class="group" role="group" aria-labelledby="fg-' + esc(g.id) + '"><span class="legend" id="fg-' + esc(g.id) + '">' + esc(g.name) + '</span>' + vals.map(function (v) {
           var on = S.f[g.id].indexOf(v) >= 0;
-          var k = all.filter(function (p) { return matches(p, g.id) && p.facet[g.id].indexOf(v) >= 0; }).length;
+          /* a chip's number is what the shop would show with it chosen: in an
+             `every` group, with the group's other choices too; in the others,
+             as an alternative to them. A label chip that would leave nothing
+             stays pressable, so the shop can say plainly that nothing has both */
+          var k = all.filter(function (p) { return matches(p, g.every ? null : g.id) && p.facet[g.id].indexOf(v) >= 0; }).length;
           return '<button class="chip" type="button" data-g="' + esc(g.id) + '" data-v="' + esc(v) + '" aria-pressed="' + on + '"' +
-            (!k && !on ? ' disabled' : '') + ' aria-label="' + esc(v) + ', ' + items(k) + '"><span class="box" aria-hidden="true">' + ICON.check + '</span>' +
+            (!k && !on && !g.every ? ' disabled' : '') + ' aria-label="' + esc(v) + ', ' + items(k) + '"><span class="box" aria-hidden="true">' + ICON.check + '</span>' +
             '<span class="v">' + esc(v) + '</span><span class="n" aria-hidden="true">' + k + '</span></button>';
         }).join('') + '</div>';
       }).join('');

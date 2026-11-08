@@ -34,11 +34,14 @@ window.LIFE = {
     { id: 'bath',     name: 'Bath & body',            blurb: 'Body wash, soaps and bath.' }
   ],
 
-  /* Filter groups. A value appears only if a product carries it. */
+  /* Filter groups. A value appears only if a product carries it. Flavors and
+     sources are alternatives: choosing two shows products with either. What the
+     label says is not (`every`): choosing two shows only products whose labels
+     print both, and none if no label does. */
   facets: [
     { id: 'flavor', name: 'Flavor' },
     { id: 'source', name: 'Protein from' },
-    { id: 'label',  name: 'The label says' }
+    { id: 'label',  name: 'The label says', every: true }
   ],
 
   products: [
@@ -249,6 +252,121 @@ window.LIFE = {
       photos: [
         { n: 1, alt: 'Front of the Ascent 100% Whey chocolate bag on a shelf' },
         { n: 2, alt: 'Back of the bag: nutrition facts and mixing instructions', panel: [232, 192, 244, 482] }
+      ]
+    },
+    {
+      id: 'ji-french-vanilla',
+      category: 'protein',
+      brand: 'Just Ingredients',
+      name: 'Protein + Creatine',
+      flavor: 'French Vanilla',
+      summary: 'Protein and creatine together: 22 g of protein per serving, 5 g of creatine monohydrate as the front states, and 0 g of added sugars.',
+      size: { text: '35.8 oz (1,015 g)', grams: 1015 },
+      servings: { n: 25, about: false },
+      protein: 22,
+      /* the creatine figure is the front's ("5g CREATINE MONOHYDRATE"); the
+         Nutrition Facts panel doesn't list creatine */
+      facts: [
+        ['Protein', '22 g per serving'],
+        ['Creatine', '5 g creatine monohydrate, as printed on the front'],
+        ['Servings', '25 per bag'],
+        ['First ingredient', '“Certified Grass-Fed Non-Denatured Whey Protein Concentrate”, as printed']
+      ],
+      ingredients: ['Certified Grass-Fed Non-Denatured Whey Protein Concentrate', 'Organic Coconut Milk*', 'Creatine Monohydrate (Pürest Creatine™)',
+                    'Grass-Fed Collagen', 'Organic Pea Protein', 'Organic Vanilla Extract Powder*', 'Organic Monk Fruit Extract', 'Organic Chia Seed Protein',
+                    'Sea Salt', 'Vanilla Bean'],
+      /* the back's icon row (photo 4): GLUTEN FREE, EGG FREE, SOY FREE, NON GMO; and
+         the left column's NO ARTIFICIAL FLAVORS */
+      label: ['No artificial flavors', 'Gluten free', 'Egg free', 'Soy free', 'Non-GMO'],
+      notes: ['Contains: dairy.'],
+      /* printed on the bag in the photos (photos 3 and 4); a bag bought through
+         the listing may carry another date, which isn't recorded */
+      date: { kind: 'Best by', text: 'August 17, 2028', printed: '08/17/2028', sort: '2028-08-17', photographed: true },
+      /* Creatine: the front's "5g CREATINE MONOHYDRATE" and the ingredient
+         "Creatine Monohydrate". Not "No added sugars": the label prints "0g ADDED
+         SUGAR", not those words (the free-from search still reads its 0g claim) */
+      facet: { flavor: ['Vanilla'], source: ['Whey'], label: ['Creatine'] },
+      /* whey is the first ingredient, not the only protein: the back prints "PROTEIN
+         FROM REAL FOOD SOURCES –BOTH PLANT AND ANIMAL" */
+      sourceNote: 'listed first; the label says its protein is from both plant and animal sources',
+      price: 49.99,
+      /* its own listing: the price checked on 6 Nov 2026; its condition and shipping
+         seen when it was published, on 3 Nov 2026 (location and returns are the store's) */
+      ebay: { item: '407335491695', url: 'https://www.ebay.com/itm/407335491695', checked: '2026-11-06', checkedText: '6 Nov 2026',
+              termsChecked: '2026-11-03', termsCheckedText: '3 Nov 2026' },
+      /* each printed on this label: "NO ARTIFICIAL FLAVORS", "NO SUGAR ALCOHOLS OR
+         ARTIFICIAL SWEETENERS LIKE SUCRALOSE", "NO SYNTHETIC GUMS, FILLERS, OR
+         EMULSIFIERS" (read as all three synthetic), "0g ADDED SUGAR", and GLUTEN
+         FREE, EGG FREE, SOY FREE, NON GMO */
+      free: ['artificial flavors', 'sugar alcohols', 'artificial sweeteners', 'synthetic gums', 'synthetic fillers', 'synthetic emulsifiers', 'added sugars', 'gluten', 'egg', 'soy', 'gmo'],
+      withheld: { items: ['the maker’s details under the ingredients', 'the small print beside the QR code'],
+                  photo: 3, why: 'too creased or too small in these photos to set out here' },
+      /* the packshot: this package lifted from photo 1 onto the plain ground, at
+         its native size (840x1050), colours as photographed (balanced: false) */
+      pack: { photo: 1, w: 840, h: 1050, balanced: false },
+      photos: [
+        { n: 1, alt: 'Front of the Just Ingredients Protein + Creatine French Vanilla bag on a counter' },
+        { n: 2, alt: 'The front of the bag, at an angle' },
+        { n: 3, alt: 'Back of the bag' },
+        { n: 4, alt: 'Back of the bag, left side: the ingredients, and the lot and date printed on this bag' },
+        { n: 5, alt: 'Nutrition facts panel on the back of the bag', panel: [180, 412, 270, 420] }
+      ]
+    },
+    {
+      id: 'ji-vanilla-peanut-butter',
+      category: 'protein',
+      brand: 'Just Ingredients',
+      name: 'Protein + Creatine',
+      flavor: 'Vanilla Peanut Butter',
+      summary: 'Protein and creatine together: 25 g of protein per serving, 5 g of creatine monohydrate as the front states, and 0 g of added sugars.',
+      size: { text: '42.68 oz (1,210 g)', grams: 1210 },
+      servings: { n: 25, about: false },
+      protein: 25,
+      /* the creatine figure is the front's ("5g CREATINE MONOHYDRATE"); the
+         Nutrition Facts panel doesn't list creatine */
+      facts: [
+        ['Protein', '25 g per serving'],
+        ['Creatine', '5 g creatine monohydrate, as printed on the front'],
+        ['Servings', '25 per bag'],
+        ['First ingredient', '“Certified Grass-Fed Non-Denatured Whey Protein Concentrate”, as printed']
+      ],
+      ingredients: ['Certified Grass-Fed Non-Denatured Whey Protein Concentrate', 'Organic Peanut Flour', 'Organic Coconut Milk*', 'Creatine Monohydrate (Pürest Creatine™)',
+                    'Grass-Fed Collagen', 'Organic Pea Protein', 'Organic Vanilla Extract Powder*', 'Sea Salt', 'Organic Chia Seed Protein',
+                    'Organic Monk Fruit Extract', 'Vanilla Bean'],
+      /* the back's NO ARTIFICIAL FLAVORS (photo 3) and its icon row's SOY FREE and
+         NON GMO (photo 2) */
+      label: ['No artificial flavors', 'Soy free', 'Non-GMO'],
+      notes: ['Contains: dairy & peanut.'],
+      /* printed on the bag in the photos (photos 2 and 3); a bag bought through
+         the listing may carry another date, which isn't recorded */
+      date: { kind: 'Best by', text: 'August 13, 2028', printed: '08/13/2028', sort: '2028-08-13', photographed: true },
+      /* Creatine: the front's "5g CREATINE MONOHYDRATE" and the ingredient
+         "Creatine Monohydrate". Not "No added sugars": the label prints "0g ADDED
+         SUGAR", not those words (the free-from search still reads its 0g claim) */
+      facet: { flavor: ['Vanilla', 'Peanut butter'], source: ['Whey'], label: ['Creatine'] },
+      /* whey is the first ingredient, not the only protein: the back prints "PROTEIN
+         FROM REAL FOOD SOURCES –BOTH PLANT AND ANIMAL" */
+      sourceNote: 'listed first; the label says its protein is from both plant and animal sources',
+      price: 49.99,
+      /* its own listing: the price checked on 6 Nov 2026; its condition and shipping
+         seen when it was published, on 3 Nov 2026 (location and returns are the store's) */
+      ebay: { item: '407335492092', url: 'https://www.ebay.com/itm/407335492092', checked: '2026-11-06', checkedText: '6 Nov 2026',
+              termsChecked: '2026-11-03', termsCheckedText: '3 Nov 2026' },
+      /* each printed on this label: "NO ARTIFICIAL FLAVORS", "NO SUGAR ALCOHOLS OR
+         ARTIFICIAL SWEETENERS LIKE SUCRALOSE", "NO SYNTHETIC GUMS, FILLERS, OR
+         EMULSIFIERS" (read as all three synthetic), "0g ADDED SUGAR", SOY FREE and
+         NON GMO; not gluten, whose badge these photos don't show clearly */
+      free: ['artificial flavors', 'sugar alcohols', 'artificial sweeteners', 'synthetic gums', 'synthetic fillers', 'synthetic emulsifiers', 'added sugars', 'soy', 'gmo'],
+      withheld: { items: ['the maker’s details under the ingredients', 'the small print beside the QR code'],
+                  photo: 2, why: 'too creased or too small in these photos to set out here' },
+      /* no packshot: in its one original photo of the front the bag touches the
+         photo's top edge, and a packshot never shows a cut bag as whole, so the
+         cards and gallery show that photo itself */
+      photos: [
+        { n: 1, alt: 'Front of the Just Ingredients Protein + Creatine Vanilla Peanut Butter bag on a counter' },
+        { n: 2, alt: 'Back of the bag' },
+        { n: 3, alt: 'Back of the bag, left side: the ingredients, and the date printed on this bag' },
+        { n: 4, alt: 'Nutrition facts panel on the back of the bag', panel: [130, 360, 315, 585] }
       ]
     }
   ],
@@ -503,6 +621,89 @@ window.LIFE = {
         { photo: 2, kind: "warning", text: "NOTICE: USE THIS PRODUCT AS A FOOD SUPPLEMENT ONLY. DO NOT USE FOR WEIGHT REDUCTION.", complete: true },
         { photo: 2, kind: "other", text: "*NO SIGNIFICANT DIFFERENCE HAS BEEN SHOWN BETWEEN DAIRY PRODUCTS DERIVED FROM rBST/rBGH-TREATED AND NON-rBST/rBGH-TREATED COWS.", complete: true },
         { photo: 2, kind: "other", text: "STORE IN A COOL, DRY PLACE. CONTENTS SOLD BY WEIGHT, NOT VOLUME.", complete: true }
+      ]
+    },
+    'ji-french-vanilla': {
+      panels: [
+        {
+          photo: 5,
+          also_in_photos: [3],
+          title: "Nutrition Facts",
+          serving_size: "Serving size 1 Scoop (40.6g)",
+          servings: "Servings Per Container: 25",
+          header: { amount: "Amount per serving", dv: "% Daily Value" },
+          complete: true,
+          rows: [
+            { name: "Calories", amount: "160", dv: "", indent: 0 },
+            { name: "Total Fat", amount: "6g", dv: "8%", indent: 0 },
+            { name: "Saturated Fat", amount: "4.5g", dv: "22%", indent: 1 },
+            { name: "Trans Fat", amount: "0g", dv: "", indent: 1 },
+            { name: "Cholesterol", amount: "40mg", dv: "13%", indent: 0 },
+            { name: "Sodium", amount: "200mg", dv: "9%", indent: 0 },
+            { name: "Total Carbohydrate", amount: "5g", dv: "2%", indent: 0 },
+            { name: "Dietary Fiber", amount: "1g", dv: "4%", indent: 1 },
+            { name: "Total Sugars", amount: "2g", dv: "", indent: 1 },
+            { name: "Includes Added Sugars", amount: "0g", dv: "0%", indent: 2, printed: "Includes 0g Added Sugars" },
+            { name: "Protein", amount: "22g", dv: "38%", indent: 0 },
+            { name: "Vitamin D", amount: "0mcg", dv: "0%", indent: 0 },
+            { name: "Calcium", amount: "70mg", dv: "6%", indent: 0 },
+            { name: "Iron", amount: "0mg", dv: "0%", indent: 0 },
+            { name: "Potassium", amount: "200mg", dv: "4%", indent: 0 }
+          ],
+          footnotes: ["The % Daily Value tells you how much a nutrient in a serving of food contributes to a daily diet. 2000 calories a day is used for general nutrition advice."]
+        }
+      ],
+      ingredients: { photo: 4, also_in_photos: [3], heading: "INGREDIENTS", text: "Certified Grass-Fed Non-Denatured Whey Protein Concentrate, Organic Coconut Milk*, Creatine Monohydrate (Pürest Creatine™), Grass-Fed Collagen, Organic Pea Protein, Organic Vanilla Extract Powder*, Organic Monk Fruit Extract, Organic Chia Seed Protein, Sea Salt, Vanilla Bean" },
+      statements: [
+        { photo: 4, also_in_photos: [3], kind: "allergen", text: "CONTAINS: DAIRY", complete: true },
+        { photo: 4, also_in_photos: [3], kind: "other", text: "*With Tapioca Starch", complete: true },
+        { photo: 1, also_in_photos: [2], kind: "other", text: "22g PROTEIN | 5g CREATINE MONOHYDRATE | 0g ADDED SUGAR", items: ["22g PROTEIN", "5g CREATINE MONOHYDRATE", "0g ADDED SUGAR"], complete: true },
+        { photo: 2, also_in_photos: [1], kind: "other", text: "No Artificial Flavors | Third Party Tested | Certified Grass-Fed Whey Protein | Naturally Occurring BCAAs", complete: true },
+        { photo: 4, also_in_photos: [3], kind: "other", text: "GLUTEN FREE | EGG FREE | SOY FREE | NON GMO", items: ["GLUTEN FREE", "EGG FREE", "SOY FREE", "NON GMO"], complete: true },
+        { photo: 4, also_in_photos: [3], kind: "other", text: "MADE WITH REAL INGREDIENTS • NO ARTIFICIAL FLAVORS • NO SUGAR ALCOHOLS OR ARTIFICIAL SWEETENERS LIKE SUCRALOSE • PROTEIN FROM REAL FOOD SOURCES –BOTH PLANT AND ANIMAL • NO SYNTHETIC GUMS, FILLERS, OR EMULSIFIERS", complete: true },
+        { photo: 3, also_in_photos: [4, 5], kind: "other", text: "OPTIMALLY FORMULATED • NEW ZEALAND AND EUROPEAN WHEY • 18 ESSENTIAL AND NON-ESSENTIAL AMINO ACIDS • PÜREST CREATINE MONOHYDRATE, THE GOLD STANDARD IN PURITY AND QUALITY • NON-GMO", complete: true },
+        { photo: 4, also_in_photos: [3], kind: "other", text: "We intentionally skip synthetic emulsifiers, gums, anti-caking agents, artificial flavors, and fillers. Because of that, you may notice natural settling or clumping when mixing, that’s normal.", complete: true }
+      ]
+    },
+    'ji-vanilla-peanut-butter': {
+      panels: [
+        {
+          photo: 4,
+          also_in_photos: [2],
+          title: "Nutrition Facts",
+          serving_size: "Serving size 1 Scoop (48.4g)",
+          servings: "Servings Per Container: 25",
+          header: { amount: "Amount per serving", dv: "% Daily Value†" },
+          complete: true,
+          rows: [
+            { name: "Calories", amount: "200", dv: "", indent: 0 },
+            { name: "Total Fat", amount: "8g", dv: "10%", indent: 0 },
+            { name: "Saturated Fat", amount: "5g", dv: "25%", indent: 1 },
+            { name: "Trans Fat", amount: "0g", dv: "", indent: 1 },
+            { name: "Cholesterol", amount: "40mg", dv: "13%", indent: 0 },
+            { name: "Sodium", amount: "300mg", dv: "13%", indent: 0 },
+            { name: "Total Carbohydrate", amount: "7g", dv: "2%", indent: 0 },
+            { name: "Dietary Fiber", amount: "1g", dv: "4%", indent: 1 },
+            { name: "Total Sugars", amount: "2g", dv: "", indent: 1 },
+            { name: "Includes Added Sugars", amount: "0g", dv: "0%", indent: 2, printed: "Includes 0g Added Sugars" },
+            { name: "Protein", amount: "25g", dv: "42%", indent: 0 },
+            { name: "Vitamin D", amount: "0mcg", dv: "0%", indent: 0 },
+            { name: "Calcium", amount: "70mg", dv: "6%", indent: 0 },
+            { name: "Iron", amount: "0mg", dv: "0%", indent: 0 },
+            { name: "Potassium", amount: "280mg", dv: "6%", indent: 0 }
+          ],
+          footnotes: ["†The % Daily Value tells you how much a nutrient in a serving of food contributes to a daily diet. 2000 calories a day is used for general nutrition advice."]
+        }
+      ],
+      ingredients: { photo: 3, also_in_photos: [2], heading: "INGREDIENTS", text: "Certified Grass-Fed Non-Denatured Whey Protein Concentrate, Organic Peanut Flour, Organic Coconut Milk*, Creatine Monohydrate (Pürest Creatine™), Grass-Fed Collagen, Organic Pea Protein, Organic Vanilla Extract Powder*, Sea Salt, Organic Chia Seed Protein, Organic Monk Fruit Extract, Vanilla Bean" },
+      statements: [
+        { photo: 3, also_in_photos: [2], kind: "allergen", text: "CONTAINS: DAIRY & PEANUT", complete: true },
+        { photo: 3, kind: "other", text: "*With Tapioca Starch", complete: true },
+        { photo: 1, kind: "other", text: "25g PROTEIN, 5g CREATINE MONOHYDRATE, 0g ADDED SUGAR", items: ["25g PROTEIN", "5g CREATINE MONOHYDRATE", "0g ADDED SUGAR"], complete: false },
+        { photo: 1, kind: "other", text: "No Artificial Flavors, Third Party Tested, Certified Grass-Fed Whey Protein", items: ["No Artificial Flavors", "Third Party Tested", "Certified Grass-Fed Whey Protein"], complete: false },
+        { photo: 3, also_in_photos: [2], kind: "other", text: "MADE WITH REAL INGREDIENTS • NO ARTIFICIAL FLAVORS • NO SUGAR ALCOHOLS OR ARTIFICIAL SWEETENERS LIKE SUCRALOSE • PROTEIN FROM REAL FOOD SOURCES –BOTH PLANT AND ANIMAL • NO SYNTHETIC GUMS, FILLERS, OR EMULSIFIERS", complete: true },
+        { photo: 3, also_in_photos: [2], kind: "other", text: "We intentionally skip synthetic emulsifiers, gums, anti-caking agents, artificial flavors, and fillers. Because of that, you may notice natural settling or clumping when mixing, that’s normal.", complete: true },
+        { photo: 3, also_in_photos: [2], kind: "other", text: "SOY FREE, NON GMO", items: ["SOY FREE", "NON GMO"], complete: false }
       ]
     }
   }

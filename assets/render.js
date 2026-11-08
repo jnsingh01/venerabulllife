@@ -30,21 +30,32 @@
   function perServing(p) { return (p.servings.about ? 'about ' : '') + money(Math.round(p.price * 100 / p.servings.n) / 100); }
   function servingsText(p) { return (p.servings.about ? 'About ' : '') + p.servings.n; }
   function fullName(p) { return p.brand + ' ' + p.name; }
+  /* the name a screen reader hears for a product: its flavour too where another
+     product shares its brand and name (twin, below) */
+  function named(p) { return fullName(p) + (twin(p) ? ', ' + p.flavor : ''); }
   function items(n) { return n + (n === 1 ? ' product' : ' products'); }
   /* the date a product's listing, and so its price, was checked */
   function checkedOf(p, L) { L = L || g.LIFE || {}; return (p.ebay && p.ebay.checkedText) || L.checkedText || ''; }
+  /* the date a listing's terms (condition, shipping, location, returns) were seen,
+     where that differs from its price's check */
+  function termsOf(p, L) { return (p.ebay && p.ebay.termsCheckedText) || checkedOf(p, L); }
   /* every price's check date in one phrase: "30 Oct 2026", or, when a listing
      was checked on another day, "30 Oct 2026 (Ka’Chava’s on 3 Nov 2026)" */
-  function checkedAll(L) {
+  /* "Equip’s", "Just Ingredients’": a brand's possessive, once per date however
+     many of its products were checked that day */
+  function possessive(b) { return b + (/s$/.test(b) ? '’' : '’s'); }
+  function checkedAll(L, of) {
     var by = {}, order = [];
+    of = of || checkedOf;
     L.products.forEach(function (p) {
-      var d = checkedOf(p, L);
+      var d = of(p, L);
       if (d === L.checkedText) { return; }
       if (!by[d]) { by[d] = []; order.push(d); }
-      by[d].push(p.brand + '’s');
+      if (by[d].indexOf(possessive(p.brand)) < 0) { by[d].push(possessive(p.brand)); }
     });
     return L.checkedText + (order.length ? ' (' + order.map(function (d) { return andList(by[d]) + ' on ' + d; }).join('; ') + ')' : '');
   }
+  function termsAll(L) { return checkedAll(L, termsOf); }
   function andList(b) { return b.length > 1 ? b.slice(0, -1).join(', ') + ' and ' + b[b.length - 1] : b.join(''); }
   /* A printed date known only for the bag in the photos (a bag bought
      through its current listing may carry another, which isn't recorded) says
@@ -72,7 +83,7 @@
     var N = p.photos.length, out = [];
     if (p.pack) {
       out.push({ kind: 'pack', n: p.pack.photo, src: pack(p, false, root), thumb: pack(p, true, root), w: p.pack.w, h: p.pack.h, tw: 480, th: 600,
-        alt: 'The ' + fullName(p) + ' bag from photo ' + p.pack.photo + ', lifted onto a plain ground' + (p.pack.balanced ? ' ' : '; ') + colors(p),
+        alt: 'The ' + named(p) + ' bag from photo ' + p.pack.photo + ', lifted onto a plain ground' + (p.pack.balanced ? ' ' : '; ') + colors(p),
         /* the viewer's caption: its counter already says "From photo N" */
         cap: 'The bag, lifted onto a plain ground' + (p.pack.balanced ? ' with the lamp’s color cast reduced. Its colors are approximate.'
           : '. Its colors are as photographed under a warm lamp, so they are approximate.'),
@@ -295,6 +306,12 @@
   /* The card's picture is the packshot: one package, centred on the well's own
      ground, so every card in a row reads at one scale. Its alt is empty
      because the card's link names the product. */
+  /* a product's flavour, for a screen reader, only where another product
+     shares its brand and name, so two cards never read the same */
+  function twin(p) {
+    var L = g.LIFE || { products: [] };
+    return L.products.some(function (x) { return x !== p && x.brand === p.brand && x.name === p.name; });
+  }
   function card(p, root) {
     var im = p.pack
       ? '<img src="' + esc(pack(p, true, root)) + '" srcset="' + esc(pack(p, true, root)) + ' 480w, ' + esc(pack(p, false, root)) + ' ' + p.pack.w + 'w"' +
@@ -305,13 +322,13 @@
       '<div class="ph' + (p.pack ? ' is-pack' : '') + '">' + im + '<span class="fail">Photo didn’t load</span></div>' +
       '<div class="card-b">' +
         '<p class="card-brand">' + esc(p.brand) + '</p>' +
-        '<h3 class="card-name"><a class="card-a" href="' + esc(productHref(p, root)) + '"><span class="sr">' + esc(p.brand) + ' </span>' + esc(p.name) + '</a></h3>' +
+        '<h3 class="card-name"><a class="card-a" href="' + esc(productHref(p, root)) + '"><span class="sr">' + esc(p.brand) + ' </span>' + esc(p.name) + (twin(p) ? '<span class="sr">, ' + esc(p.flavor) + '</span>' : '') + '</a></h3>' +
         '<p class="card-sub">' + esc(p.flavor) + ' · <span class="nw">' + esc(p.size.text) + '</span></p>' +
         '<p class="card-facts">' + p.protein + ' g protein · ' + esc(servingsText(p).replace('About', 'about')) + ' servings</p>' +
         '<p class="card-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
         '<p class="card-when">On eBay, checked <span class="nw">' + esc(checkedOf(p)) + '</span></p>' +
         '<div class="card-foot"><span class="card-go" aria-hidden="true">View ' + ICON.arrow + '</span>' +
-          ext(p.ebay.url, 'Buy on eBay', 'card-buy', 'opens the eBay listing for the ' + fullName(p) + ' in a new tab') + '</div>' +
+          ext(p.ebay.url, 'Buy on eBay', 'card-buy', 'opens the eBay listing for the ' + named(p) + ' in a new tab') + '</div>' +
       '</div></article>';
   }
   function cards(list, root) { return list.map(function (p) { return card(p, root); }).join(''); }
@@ -338,7 +355,7 @@
   }
   function cmpNote(L) { return 'Listed prices as checked on eBay on ' + checkedAll(L) + '. eBay shows the current price and availability.'; }
   function howListing(L) {
-    return 'As listed when the listings were checked on ' + checkedAll(L) + ': ' + L.listing.shipping.toLowerCase() +
+    return 'As listed when the listings were checked on ' + termsAll(L) + ': ' + L.listing.shipping.toLowerCase() +
       ', item located in ' + L.listing.from + '. ' + L.listing.returns;
   }
   function listingDl(L) {
@@ -347,8 +364,11 @@
   }
   function intro(L) {
     var cat = L.categories.filter(function (c) { return counts(L)[c.id]; }).map(function (c) { return c.name.toLowerCase().replace('&', 'and'); });
+    /* kept to the length the phone layout was measured with: with six brands the
+       older ending ("…, servings and the date on the package") took one more line at
+       most widths and pushed the shop's Filters and Sort under Safari's toolbar */
     return (cat.length ? cat.join(', ').replace(/^./, function (x) { return x.toUpperCase(); }) : 'Nothing yet') + ' from ' + brandList(L) +
-      ', each with its size, servings and the date on the package.';
+      ', each with its size and servings.';
   }
 
   /* ── the home page's written sections ─────────────────────────────────── */
@@ -460,7 +480,14 @@
     }).join('');
     var ing = lb.ingredients;
     var where = ing && (ing.heading ? 'Printed under “' + esc(ing.heading) + '”.' : (/^Back of the bag/.test(photoOf(p, ing.photo).alt || '') ? 'Printed on the back of the bag.' : ''));
+    /* the line that explains a mark in the ingredients ("*With Tapioca Starch"),
+       when no panel already sets it beside itself: under the list, quoted */
+    var foot = !ing ? [] : others.filter(function (s) {
+      var m = MARKS.exec(s.text);
+      return m && ing.text.indexOf(m[0]) >= 0 && !lb.panels.some(function (pa) { return pa.rows.some(function (r) { return r.name.indexOf(m[0]) >= 0; }); });
+    });
     var side = ing ? '<div class="lab-b"><h3 class="lab-h">Ingredients</h3><blockquote class="lab-q"><p>' + esc(ing.text) + '</p></blockquote>' +
+      foot.map(function (s) { return '<p class="lab-src lab-beside">Printed below the ingredients: “' + esc(s.text) + '”</p>'; }).join('') +
       '<p class="lab-src">' + (where ? where + ' ' : '') + photoLink(p, ing.photo, root) + '</p></div>' : '';
     var notes = lb.statements.filter(function (s) { return s.complete && KINDS.indexOf(s.kind) >= 0; })
       .sort(function (a, b) { return KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind); });
@@ -520,12 +547,14 @@
         p.ingredients.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' });
     }
     acc.push({ t: 'Buying, delivery and returns', h:
-      '<p class="acc-lead">As listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + ':</p>' + listingDl(L) +
+      '<p class="acc-lead">As listed on eBay when the listing was checked on ' + esc(termsOf(p, L)) + ':</p>' + listingDl(L) +
       '<p class="acc-more">You pay on eBay, and the listing is what applies to your purchase, so check it before you buy. ' +
       'Questions about this item can be asked through “Contact seller” on the listing.</p>' });
     acc.push({ t: 'Where these details come from', h:
       '<p>The product facts on this page are transcribed from the package label in the photos; if anything here differs from the label on the package, the label is right. ' +
-      'The price, condition, shipping and returns are as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + '. ' +
+      (termsOf(p, L) === checkedOf(p, L)
+        ? 'The price, condition, shipping and returns are as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + '. '
+        : 'The price is as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + ', and the condition, shipping and returns as listed on ' + esc(termsOf(p, L)) + '. ') +
       'This page makes no health claims, and nothing on it is medical advice.</p>' });
     /* Every panel is open in the HTML, so all of it is there without scripts;
        the script folds all but the first. */
@@ -557,7 +586,7 @@
         '<li><span>Product facts from the package’s own label.</span></li>' +
       '</ol>' +
       '<a class="sbuy-more" href="' + esc(root) + 'help.html">How buying works</a>' +
-      '<p class="sbuy-a">' + ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s', 'opens the eBay listing for the ' + fullName(p) + ' in a new tab') +
+      '<p class="sbuy-a">' + ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s', 'opens the eBay listing for the ' + named(p) + ' in a new tab') +
         '<a class="btn btn-2 btn-s" href="' + esc(root) + 'help.html">How buying works</a></p>' +
     '</div>';
   }
@@ -565,10 +594,10 @@
      package, its name, the price, its check date and Buy on eBay (shown by the
      script; hidden without it). */
   function buyBar(p, L, root) {
-    return '<aside class="bbar js-only" id="bbar" aria-label="Buy the ' + esc(fullName(p)) + '" data-dated><div class="bbar-in">' +
+    return '<aside class="bbar js-only" id="bbar" aria-label="Buy the ' + esc(named(p)) + '" data-dated><div class="bbar-in">' +
       (p.pack ? '<img class="bbar-im" src="' + esc(pack(p, true, root)) + '" alt="" width="480" height="600" loading="lazy" decoding="async">' : '') +
       '<p class="bbar-p"><span class="bbar-n">' + esc(fullName(p)) + '</span><span class="price">' + money(p.price) + '</span><span class="bbar-w">On eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span></span></p>' +
-      ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s bbar-b', 'opens the eBay listing for the ' + fullName(p) + ' in a new tab') +
+      ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s bbar-b', 'opens the eBay listing for the ' + named(p) + ' in a new tab') +
     '</div></aside>';
   }
 
@@ -583,7 +612,7 @@
       ['Protein', p.protein + ' g <small>per serving</small>'],
       ['Flavor', esc(p.flavor)]
     ];
-    if (p.facet.source && p.facet.source.length) { kv.push(['Protein from', esc(p.facet.source.join(', '))]); }
+    if (p.facet.source && p.facet.source.length) { kv.push(['Protein from', esc(p.facet.source.join(', ')) + (p.sourceNote ? ' <small>' + esc(p.sourceNote) + '</small>' : '')]); }
     kv.push([esc(p.date.kind), esc(p.date.text) + ' <small>printed ' + esc(p.date.printed) + esc(whose(p)) + '</small>']);
     return '<nav aria-label="Breadcrumb"><ol class="crumbs">' +
         '<li><a href="' + esc(root) + 'index.html">Home</a></li>' +
@@ -598,7 +627,7 @@
           /* the picture and its controls: on wide screens the controls sit on
              the picture's corner, on phones in a row under it */
           '<div class="stage-w">' +
-          '<div class="stage" id="stage" tabindex="0" role="group" aria-roledescription="picture viewer" aria-label="Pictures of the ' + esc(fullName(p)) + ' package">' +
+          '<div class="stage" id="stage" tabindex="0" role="group" aria-roledescription="picture viewer" aria-label="Pictures of the ' + esc(named(p)) + ' package">' +
             '<img id="stage-img" class="is-shown' + (first.kind === 'pack' ? ' is-pack' : '') + '" src="' + esc(first.src) + '" alt="' + esc(first.alt) + '" width="' + first.w + '" height="' + first.h + '" decoding="async" fetchpriority="high">' +
             '<div class="ph-state" id="stage-fail" hidden><div>This photo didn’t load.<br><button class="btn btn-2 btn-s" type="button" id="stage-retry">Try again</button></div></div>' +
             closingCard(p, L, root) +
@@ -762,7 +791,7 @@
 
   var R = {
     STORE: STORE, STORE_NAME: STORE_NAME, NOTICE: NOTICE, NOT_HERE: NOT_HERE, DIRECTIONS: DIRECTIONS, HELP: HELP, DIRECTIONS_NOTE: DIRECTIONS_NOTE, IMG: IMG,
-    checkedOf: checkedOf, checkedAll: checkedAll, storeTile: storeTile,
+    checkedOf: checkedOf, checkedAll: checkedAll, termsOf: termsOf, termsAll: termsAll, storeTile: storeTile,
     esc: esc, money: money, perServing: perServing, servingsText: servingsText, fullName: fullName, items: items,
     productHref: productHref, photo: photo, catOf: catOf, counts: counts, brands: brands, facetValues: facetValues, facetLabel: facetLabel,
     ICON: ICON, ext: ext, storeLink: storeLink, pic: pic, status: status,
