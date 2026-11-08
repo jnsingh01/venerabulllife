@@ -46,6 +46,14 @@
     return L.checkedText + (order.length ? ' (' + order.map(function (d) { return andList(by[d]) + ' on ' + d; }).join('; ') + ')' : '');
   }
   function andList(b) { return b.length > 1 ? b.slice(0, -1).join(', ') + ' and ' + b[b.length - 1] : b.join(''); }
+  /* A printed date known only for the bag in the photos (a bag bought
+     through its current listing may carry another, which isn't recorded) says
+     whose date it is wherever it is shown, and the product page says what
+     that means. */
+  var PHOTO_DATE = 'on the bag in the photos';
+  var PHOTO_DATE_NOTE = 'That date is the one printed on the bag in the photos. A bag bought through the current listing may carry a different date; ' +
+    'to confirm it, ask through “Contact seller” on the listing.';
+  function whose(p) { return p.date.photographed ? ' ' + PHOTO_DATE : ''; }
   function productHref(p, root) { return (root || '') + 'products/' + p.id + '.html'; }
   function photo(p, n, card, root) { return (root || '') + 'assets/img/' + p.id + '-' + n + (card ? '-card' : '') + '.jpg'; }
   /* the packshot: the package from one of its photos, on the plain ground */
@@ -325,7 +333,7 @@
         function td(l, v, num) { return '<td' + (num ? ' class="num"' : '') + ' role="cell" data-l="' + l + '">' + v + '</td>'; }
         return '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '">' + esc(fullName(p)) + '</a><small>' + esc(p.flavor) + '</small></th>' +
           td('Size', esc(p.size.text).replace(/\(([^)]*)\)/, '<span class="nw">($1)</span>')) + td('Servings', esc(servingsText(p)), true) + td('Protein', p.protein + ' g', true) +
-          td('Listed price', money(p.price), true) + td('Per serving', esc(perServing(p)), true) + td('Date on the bag', esc(p.date.kind + ' ' + p.date.text)) + '</tr>';
+          td('Listed price', money(p.price), true) + td('Per serving', esc(perServing(p)), true) + td('Date on the bag', esc(p.date.kind + ' ' + p.date.text + (p.date.photographed ? ', ' + PHOTO_DATE : ''))) + '</tr>';
       }).join('') + '</tbody>';
   }
   function cmpNote(L) { return 'Listed prices as checked on eBay on ' + checkedAll(L) + '. eBay shows the current price and availability.'; }
@@ -500,8 +508,8 @@
     var acc = [], lb = L.labels && L.labels[p.id];
     acc.push({ t: 'From the label', h:
       '<ul>' + p.facts.map(function (f) { return '<li><b>' + esc(f[0]) + ':</b> ' + esc(f[1]) + '</li>'; }).join('') +
-      '<li><b>' + esc(p.date.kind) + ':</b> ' + esc(p.date.text) + ' (printed ' + esc(p.date.printed) + ')</li></ul>' +
-      p.notes.map(function (x) { return '<p class="note">' + esc(x) + '</p>'; }).join('') +
+      '<li><b>' + esc(p.date.kind) + ':</b> ' + esc(p.date.text) + ' (printed ' + esc(p.date.printed) + esc(whose(p)) + ')</li></ul>' +
+      p.notes.concat(p.date.photographed ? [PHOTO_DATE_NOTE] : []).map(function (x) { return '<p class="note">' + esc(x) + '</p>'; }).join('') +
       (lb
         ? '<p class="acc-more">The full ' + esc(lb.panels[0].title.toLowerCase()) + ' panel, the ingredients and the label’s notices' + readable(p) + ' are <a href="#label">set out as text below</a>.</p>'
         : '<p class="acc-more">The photos show the full ' + (/supplement/i.test(p.photos.map(function (x) { return x.alt; }).join(' ')) ? 'supplement' : 'nutrition') +
@@ -576,7 +584,7 @@
       ['Flavor', esc(p.flavor)]
     ];
     if (p.facet.source && p.facet.source.length) { kv.push(['Protein from', esc(p.facet.source.join(', '))]); }
-    kv.push([esc(p.date.kind), esc(p.date.text) + ' <small>printed ' + esc(p.date.printed) + '</small>']);
+    kv.push([esc(p.date.kind), esc(p.date.text) + ' <small>printed ' + esc(p.date.printed) + esc(whose(p)) + '</small>']);
     return '<nav aria-label="Breadcrumb"><ol class="crumbs">' +
         '<li><a href="' + esc(root) + 'index.html">Home</a></li>' +
         '<li><a href="' + esc(root) + 'shop.html">Shop</a></li>' +
