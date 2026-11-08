@@ -349,12 +349,23 @@
   }
 
   /* A card that takes keyboard focus comes fully into view, in a row that
-     scrolls sideways as much as under the sticky header. */
+     scrolls sideways as much as under the sticky header. Keyboard focus only:
+     a mouse press on a card's Buy on eBay also focuses the link (in Chrome),
+     and scrolling then moved the button from under the pointer before the
+     button came up, so the click landed on the card and never reached the
+     listing. :focus-visible tells the two apart; where it is unknown, the last
+     input does (a press, or a key). */
+  var pressed = false;
+  doc.addEventListener('pointerdown', function () { pressed = true; }, true);
+  doc.addEventListener('keydown', function () { pressed = false; }, true);
+  function byKeyboard(el) {
+    try { return el.matches(':focus-visible'); } catch (x) { return !pressed; }
+  }
   function reveal(box) {
     if (!box) { return; }
     box.addEventListener('focusin', function (e) {
       var c = e.target.closest ? e.target.closest('.card, .stile') : null;
-      if (c && box.contains(c)) { c.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: REDUCED ? 'auto' : 'smooth' }); }
+      if (c && box.contains(c) && byKeyboard(e.target)) { c.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: REDUCED ? 'auto' : 'smooth' }); }
     });
   }
 
@@ -683,6 +694,15 @@
     var phone = window.matchMedia ? window.matchMedia('(max-width: 899px)') : null;
     groups.parentNode.insertBefore(home, groups);
     function sheetOpen() { return groups.classList.contains('is-open'); }
+    /* On wide screens the rail holds still beside the products only while it
+       fits the window under the header. Taller than that (a short laptop
+       window), it scrolls with the page, so its last filter can always be
+       reached, by scrolling or by Tab. */
+    function railFit() {
+      var wide = !phone || !phone.matches, top = $('#top') ? $('#top').getBoundingClientRect().height + 20 : 0;
+      groups.classList.toggle('is-tall', wide && !sheetOpen() && groups.offsetHeight + top + 20 > innerHeight);
+    }
+    window.addEventListener('resize', function () { frame(railFit); });
     function reachable() {
       return $$('button, a[href], input', groups).filter(function (el) { return !el.disabled && el.offsetParent !== null; });
     }
@@ -759,6 +779,7 @@
       pillInView(kind === null || kind === 'pop');
       $('#results').setAttribute('aria-labelledby', 'tab-' + (S.c || 'all'));
       chips();
+      railFit();
       appliedChips();
       if (!catList.length) { applied.hidden = true; }
       var sel = SORTS.filter(function (s) { return s.id === S.sort; })[0];

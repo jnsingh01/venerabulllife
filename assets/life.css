@@ -618,6 +618,8 @@ html.enhanced .shop-body.is-empty { grid-template-columns: minmax(0, 1fr); }
 html.enhanced [data-page="shop"] .search-t, html.enhanced [data-page="home"] .search-t, html.enhanced [data-page="notfound"] .search-t { display: inline-grid; }
 .rail { padding-top: 22px; }
 .groups { position: sticky; top: calc(var(--top-h) + 20px); }
+/* taller than the window under the header, the rail scrolls with the page (life.js railFit) */
+.groups.is-tall { position: static; }
 .sheet-h { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: 0 0 6px; }
 .sheet-t { margin: 0; font-size: 17px; font-weight: 600; }
 .sheet-done { display: none; }
