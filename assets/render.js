@@ -64,12 +64,19 @@
        its products isn't in this list (sold out, or its terms only partly recorded), so a date never reads as the
        whole brand's */
     function whole(b) { return L.products.filter(function (x) { return x.brand === b; }).every(function (x) { return list.indexOf(x) >= 0; }); }
-    list.forEach(function (p) {
-      var d = of(p, L), who = possessive(Object.keys(days[p.brand]).length > 1 || !whole(p.brand) ? p.brand + ' ' + p.flavor : p.brand);
+    function add(d, who) {
       if (d === L.checkedText) { return; }
       if (!by[d]) { by[d] = []; order.push(d); }
       if (by[d].indexOf(who) < 0) { by[d].push(who); }
+    }
+    list.forEach(function (p) {
+      add(of(p, L), possessive(Object.keys(days[p.brand]).length > 1 || !whole(p.brand) ? p.brand + ' ' + p.flavor : p.brand));
     });
+    /* a price's dates take in each second listing's own ("Equip Chocolate two-pack’s on 9 Nov 2026"); its terms are
+       left to its listing, so a phrase of terms never names it */
+    if (of === checkedOf && !keep) {
+      L.products.forEach(function (p) { if (also(p)) { add(also(p).ebay.checkedText, possessive(hold(alsoName(p)))); } });
+    }
     return day(L.checkedText) + (order.length ? ' (' + order.map(function (d) { return andList(by[d]) + ' on ' + day(d); }).join('; ') + ')' : '');
   }
   /* The listing terms a product's own records verify: all four for most listings (condition and shipping seen on
@@ -84,9 +91,9 @@
   function partListed(L) { return L.products.filter(function (p) { return !out(p) && partTerms(p); }); }
   /* every listing whose terms are all recorded, with each one's date; then which are not covered */
   function termsAll(L) {
-    var part = partListed(L);
-    return checkedAll(L, termsOf, function (p) { return !partTerms(p); }) +
-      (part.length ? ', all but ' + andList(part.map(function (p) { return possessive(p.brand + ' ' + p.flavor); })) : '');
+    var part = partListed(L), alsos = L.products.filter(also);
+    var but = part.map(function (p) { return possessive(p.brand + ' ' + p.flavor); }).concat(alsos.map(function (p) { return 'the ' + possessive(hold(alsoName(p))); }));
+    return checkedAll(L, termsOf, function (p) { return !partTerms(p); }) + (but.length ? ', all but ' + andList(but) : '');
   }
   /* what a partly recorded listing's records show, said where the shared terms are */
   function partNote(L) {
@@ -97,6 +104,12 @@
         '. Its ' + andList(unseen(p)) + ' are shown on the listing.';
     }).join(' ');
   }
+  /* a second listing's terms: none are recorded here, so the shared terms never read as its */
+  function alsoNote(L) {
+    return L.products.filter(also).map(function (p) { return 'The ' + hold(alsoName(p)) + '’s condition, shipping, item location and returns are shown on its own listing.'; }).join(' ');
+  }
+  /* every note that follows the shared terms */
+  function termsNote(L) { return [partNote(L), alsoNote(L)].filter(Boolean).join(' '); }
   function andList(b) { return b.length > 1 ? b.slice(0, -1).join(', ') + ' and ' + b[b.length - 1] : b.join(''); }
   /* A printed date known only for the bag in the photos (a bag bought
      through its current listing may carry another, which isn't recorded) says
@@ -134,6 +147,26 @@
   function sameBrand(p) {
     var L = g.LIFE || { products: [] };
     return L.products.some(function (x) { return x !== p && x.brand === p.brand && !out(x); });
+  }
+  /* A second listing of a product's flavor in another pack (`also`: Equip Chocolate's two-pack, two smaller pouches).
+     It is an item of its own: wherever the product appears it is offered in words, apart from the product's own
+     figures, with its pack count and each package's size, its price for every package together, the date that price
+     was checked and its own Buy, which names it. No photo here shows it, so it never stands under the product's
+     picture as if it were that package. */
+  function also(p) { return (p && p.also) || null; }
+  /* "Equip Chocolate two-pack", the name it goes by in running text and to a screen reader */
+  function alsoName(p) { return p.brand + ' ' + p.flavor + ' ' + p.also.name; }
+  /* the name as it is shown in running text: its hyphen a non-breaking one, so "two-pack" never parts at a line's end
+     (ids, links and the words search goes by keep the plain hyphen) */
+  function hold(s) { return String(s).replace(/(\S)-(\S)/g, '$1\u2011$2'); }
+  function alsoCount(a) { return a.n + ' ' + a.units; }
+  /* "for both", or "for all 3" */
+  function alsoFor(a) { return 'for ' + (a.n === 2 ? 'both' : 'all ' + a.n); }
+  function alsoPer(a) { return money(Math.round(a.price * 100 / a.servings) / 100); }
+  /* "9.1 oz", each package's size without its grams, for a narrow line */
+  function alsoEach(a) { return a.each.replace(/ \(.*\)$/, ''); }
+  function alsoBuy(p, text, cls) {
+    return ext(p.also.ebay.url, text, cls, 'opens the eBay listing for the ' + alsoName(p) + ', ' + alsoCount(p.also) + ', in a new tab');
   }
   /* "6 Nov 2026" in one piece in running text (a no-break space between its parts) */
   function day(d) { return String(d || '').replace(/ /g, '\u00a0'); }
@@ -391,7 +424,7 @@
     var L = g.LIFE || { products: [] };
     return L.products.some(function (x) { return x !== p && x.brand === p.brand && x.name === p.name; });
   }
-  function card(p, root) {
+  function card(p, root, Q) {
     var im = p.pack
       ? '<img src="' + esc(pack(p, true, root)) + '" srcset="' + esc(pack(p, true, root)) + ' 480w, ' + esc(pack(p, false, root)) + ' ' + p.pack.w + 'w"' +
         ' sizes="(min-width: 1100px) 330px, (min-width: 760px) 34vw, (min-width: 560px) 46vw, 74vw" alt="" width="480" height="600" loading="lazy" decoding="async">'
@@ -412,11 +445,33 @@
             '<p class="card-when">On eBay, checked <span class="nw">' + esc(p.stock.checkedText) + '</span></p>'
           : '<p class="card-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
             '<p class="card-when">On eBay, checked <span class="nw">' + esc(checkedOf(p)) + '</span></p>') +
+        alsoCard(p, Q) +
         '<div class="card-foot"><span class="card-go" aria-hidden="true">View ' + ICON.arrow + '</span>' +
-          (out(p) ? '' : ext(p.ebay.url, 'Buy on eBay', 'card-buy', 'opens the eBay listing for the ' + named(p) + ' in a new tab')) + '</div>' +
+          (out(p) ? (alsoShown(p, Q) ? alsoBuy(p, 'Buy the ' + esc(hold(also(p).name)), 'card-buy card-alt-b') : '')
+            : ext(p.ebay.url, 'Buy on eBay', 'card-buy', 'opens the eBay listing for the ' + named(p) + ' in a new tab')) + '</div>' +
       '</div></article>';
   }
-  function cards(list, root) { return list.map(function (p) { return card(p, root); }).join(''); }
+  /* A card's second listing, unless a free-from search names a claim its own packages don't print (`also.free`; the
+     two-pack's pouches print no "artificial sweeteners", which the 18.1 oz bag does): set apart by a rule, in two lines,
+     what it is and its pack, then its price for every package and its date. Its Buy sits in the card's foot, where a
+     card's Buy on eBay sits, when the product itself is sold out (when it is for sale, its own Buy is there, so this one is in the block). */
+  function alsoShown(p, Q) {
+    var a = also(p);
+    if (!a || !(Q && Q.free && Q.free.length)) { return a; }
+    var f = (a.free || []).map(stem);
+    return Q.free.every(function (t) { return f.indexOf(t) >= 0; }) ? a : null;
+  }
+  function alsoCard(p, Q) {
+    var a = alsoShown(p, Q);
+    if (!a) { return ''; }
+    return '<div class="card-alt" data-dated>' +
+      '<p class="card-alt-d">Also as a ' + esc(hold(a.name)) + ': <span class="nw">' + esc(alsoCount(a)) + '</span> of <span class="nw">' + glue(alsoEach(a)) + '</span></p>' +
+      '<p class="card-alt-p"><span class="price">' + money(a.price) + '</span> ' + alsoFor(a) + ', checked <span class="nw">' + esc(a.ebay.checkedText) + '</span></p>' +
+      (out(p) ? '' : alsoBuy(p, 'Buy the ' + esc(hold(a.name)), 'card-buy card-alt-b')) +
+    '</div>';
+  }
+  /* Q: the shop's search, when the cards are its results */
+  function cards(list, root, Q) { return list.map(function (p) { return card(p, root, Q); }).join(''); }
   /* the shop's last cell: the store itself, so a grid of five never ends on a gap */
   function storeTile() {
     return '<a class="stile" href="' + STORE + '" target="_blank" rel="noopener">' +
@@ -426,7 +481,7 @@
   }
   function priceNote(L) {
     return 'Prices are the listed eBay prices, checked ' + checkedAll(L) + '. Per-serving prices are the listed price divided by the servings on the label' +
-      (L.products.some(function (p) { return p.bundle; }) ? ' (for a bundle, every package’s servings together)' : '') + '. eBay shows the current price and availability.';
+      (L.products.some(function (p) { return p.bundle || p.also; }) ? ' (for a bundle, every package’s servings together)' : '') + '. eBay shows the current price and availability.';
   }
 
   /* ── the shop's written sections ──────────────────────────────────────── */
@@ -436,7 +491,15 @@
         return '<th scope="col" role="columnheader">' + h + '</th>'; }).join('') + '</tr></thead><tbody role="rowgroup">' +
       shelf(L.products).map(function (p) {
         function td(l, v, num) { return '<td' + (num ? ' class="num"' : '') + ' role="cell" data-l="' + l + '">' + v + '</td>'; }
-        return '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '">' + esc(fullName(p)).replace(/ \+ /g, '&nbsp;+&nbsp;').replace(/(\S)-(\S)/g, '$1\u2011$2') + '</a><small>' + glue(p.flavor) + '</small></th>' +
+        var a = also(p);
+        /* a second listing has its own row, just above its product's, with its own figures */
+        return (a ? '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '#' + esc(a.name) + '">' + esc(fullName(p)) + '</a>' +
+            '<small>' + glue(p.flavor) + ', ' + esc(hold(a.name)) + '</small></th>' +
+          td('Size', esc(alsoCount(a)) + ' <small>' + glue(a.each) + '&nbsp;each</small>') +
+          td('Servings', a.servings + '&nbsp;in&nbsp;all <small>' + a.per + '&nbsp;per&nbsp;' + esc(a.unit) + '</small>', true) + td('Protein', a.protein + ' g', true) +
+          td('Listed price', money(a.price) + ' <small>' + alsoFor(a) + '</small>', true) + td('Per serving', esc(alsoPer(a)), true) +
+          td('Date on the bag', esc(a.date.kind + ' ' + day(a.date.text)) + ', on the ' + esc(a.unit) + ' in its listing’s\u00a0photos') + '</tr>' : '') +
+          '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '">' + esc(fullName(p)).replace(/ \+ /g, '&nbsp;+&nbsp;').replace(/(\S)-(\S)/g, '$1\u2011$2') + '</a><small>' + glue(p.flavor) + '</small></th>' +
           td('Size', p.bundle ? esc(count(p)) + ' <small>' + glue(p.bundle.each) + '&nbsp;each</small>' : esc(p.size.text).replace(/\(([^)]*)\)/, '<span class="nw">($1)</span>')) +
           td('Servings', esc(servingsText(p)) + (p.bundle ? '&nbsp;in&nbsp;all <small>' + p.bundle.servings + '&nbsp;per&nbsp;' + esc(p.bundle.unit) + '</small>' : ''), true) + td('Protein', p.protein + ' g', true) +
           (out(p) ? td('Listed price', 'Sold out <small>checked <span class="nw">' + esc(p.stock.checkedText) + '</span></small>', true) +
@@ -448,7 +511,7 @@
   function cmpNote(L) { return 'Listed prices as checked on eBay on ' + checkedAll(L) + '. eBay shows the current price and availability.'; }
   function howListing(L) {
     return 'As listed when the listings were checked on ' + termsAll(L) + ': ' + L.listing.shipping.toLowerCase() +
-      ', item located in ' + day(L.listing.from) + '. ' + L.listing.returns + (partListed(L).length ? ' ' + partNote(L) : '');
+      ', item located in ' + day(L.listing.from) + '. ' + L.listing.returns + (termsNote(L) ? ' ' + termsNote(L) : '');
   }
   /* a term's last two words held together, so it never ends on one word alone */
   function tail(s) { return String(s).replace(/ (\S+)$/, '\u00a0$1'); }
@@ -672,7 +735,13 @@
         p.ingredients.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' });
     }
     /* a sold-out product: no terms to buy by, and nothing that sends a shopper to a listing this page doesn't link */
-    acc.push(out(p) ? { t: 'Buying, delivery and returns', h:
+    var a = also(p);
+    acc.push(out(p) && a ? { t: 'Buying, delivery and returns', h:
+      /* sold out, with a second listing: the bag can't be bought, the two-pack can, through its own listing alone */
+      '<p class="acc-lead">This bag’s listing was sold out on eBay when checked on ' + esc(p.stock.checkedText) + ', so the bag can’t be bought here.</p>' +
+      '<p class="acc-more">' + esc(p.flavor) + ' is also listed as a <a href="#' + esc(a.name) + '">' + esc(hold(a.name)) + '</a>, ' + esc(alsoCount(a)) + ' of ' + esc(alsoEach(a)) +
+        ' each, on its own eBay listing. You pay on eBay, and that listing is what applies to your purchase, so check it before you buy; its condition, shipping and returns are shown there. ' +
+        'Everything we sell is in our eBay store.</p>' } : out(p) ? { t: 'Buying, delivery and returns', h:
       '<p class="acc-lead">Its listing was sold out on eBay when checked on ' + esc(p.stock.checkedText) + ', so there is no way to buy it here.</p>' +
       '<p class="acc-more">Every purchase is made on eBay, and everything we sell is in our eBay store.</p>' } : { t: 'Buying, delivery and returns', h:
       '<p class="acc-lead">As listed on eBay when the listing was checked on ' + esc(termsOf(p, L)) + ':</p>' + listingDl(L, p) +
@@ -680,7 +749,9 @@
       'Questions about this item can be asked through “Contact seller” on the listing.</p>' });
     acc.push({ t: 'Where these details come from', h:
       '<p>The product facts on this page are transcribed from the package label in the photos; if anything here differs from the label on the package, the label is right. ' +
-      (out(p) ? 'The sold-out status is as its eBay listing showed when checked on ' + esc(p.stock.checkedText) + '. '
+      (out(p) ? 'The sold-out status is as its eBay listing showed when checked on ' + esc(p.stock.checkedText) + '. ' +
+          (a ? 'The ' + esc(hold(a.name)) + '’s price is as listed on eBay when its own listing was checked on ' + esc(a.ebay.checkedText) + '; its size, servings, protein and date are from the ' +
+            esc(a.units) + ' in that listing’s photos. ' : '')
         : partTerms(p) ? (termsOf(p, L) === checkedOf(p, L)
           ? 'The price and ' + esc(andList(termKeys(p))) + ' are as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + '. '
           : 'The price is as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + ', and the ' + esc(andList(termKeys(p))) + ' as listed on ' + esc(termsOf(p, L)) + '. ')
@@ -710,16 +781,26 @@
      ways on. Designed in the page, not a picture; shown by the viewer only
      (without scripts the buy box beside the photos says all of it). */
   function closingCard(p, L, root) {
+    var a = also(p);
     return '<div class="sbuy js-only" id="stage-buy" hidden data-dated>' +
       '<p class="sbuy-t">' + (out(p) ? 'Sold out on eBay.' : 'Choose here. Buy on eBay.') + '</p>' +
       '<ol class="sbuy-l">' +
         '<li><span>Sold through our eBay store, ' + STORE_NAME + '.</span></li>' +
-        (out(p) ? '<li><span>Its listing was sold out when checked on <span class="nw">' + esc(p.stock.checkedText) + '</span>.</span></li>'
-          : '<li><span><span class="price">' + money(p.price) + '</span> ' + (p.bundle ? 'for ' + esc(count(p)) + ', ' : '') + 'as listed on eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span>.</span></li>') +
-        '<li><span>Product facts from the package’s own label.</span></li>' +
+        /* sold out, with a second listing: the bag's status, then what the second listing is, its price for every
+           package and its date; still three lines, so the card keeps its room in a phone's shortest frame */
+        (out(p) && a ? '<li><span>This bag’s listing was sold out when checked on <span class="nw">' + esc(p.stock.checkedText) + '</span>.</span></li>' +
+            /* in two lines at a phone's shortest frame (375 x 652): the pack in words, its price and date; Buy, right
+               under it, names the two-pack */
+            '<li><span>' + cap1(({ 2: 'two', 3: 'three' })[a.n] || String(a.n)) + ' <span class="nw">' + glue(alsoEach(a)) + '</span> ' + esc(a.units) + ': <span class="price">' + money(a.price) + '</span> ' +
+              alsoFor(a) + ', checked <span class="nw">' + esc(a.ebay.checkedText) + '</span>.</span></li>'
+          : out(p) ? '<li><span>Its listing was sold out when checked on <span class="nw">' + esc(p.stock.checkedText) + '</span>.</span></li>' +
+            '<li><span>Product facts from the package’s own label.</span></li>'
+          : '<li><span><span class="price">' + money(p.price) + '</span> ' + (p.bundle ? 'for ' + esc(count(p)) + ', ' : '') + 'as listed on eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span>.</span></li>' +
+            '<li><span>Product facts from the package’s own label.</span></li>') +
       '</ol>' +
       '<a class="sbuy-more" href="' + esc(root) + 'help.html">How buying works</a>' +
-      '<p class="sbuy-a">' + (out(p) ? '<a class="btn btn-2 btn-s sbuy-go" href="' + esc(instead(p, root).href) + '">' + esc(instead(p, root).text) + '</a>'
+      '<p class="sbuy-a">' + (out(p) && a ? alsoBuy(p, 'Buy the ' + esc(hold(a.name)), 'btn btn-1 btn-s sbuy-two')
+        : out(p) ? '<a class="btn btn-2 btn-s sbuy-go" href="' + esc(instead(p, root).href) + '">' + esc(instead(p, root).text) + '</a>'
         : ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s', 'opens the eBay listing for the ' + named(p) + ' in a new tab')) +
         '<a class="btn btn-2 btn-s" href="' + esc(root) + 'help.html">How buying works</a></p>' +
     '</div>';
@@ -728,6 +809,16 @@
      package, its name, the price, its check date and Buy on eBay (shown by the
      script; hidden without it). */
   function buyBar(p, L, root) {
+    var a = also(p);
+    /* sold out, with a second listing: the bar is that listing's, named first (the name is what a narrow bar cuts),
+       with no picture, since none here shows it */
+    if (out(p) && a) {
+      return '<aside class="bbar js-only" id="bbar" aria-label="Buy the ' + esc(alsoName(p)) + '" data-dated><div class="bbar-in">' +
+        '<p class="bbar-p"><span class="bbar-n">' + esc(cap1(hold(a.name)) + ', ' + alsoCount(a) + ' of ' + alsoEach(a)) + '</span><span class="price">' + money(a.price) + '</span>' +
+          '<span class="bbar-w">' + cap1(alsoFor(a)) + ', checked <span class="nw">' + esc(a.ebay.checkedText) + '</span></span></p>' +
+        alsoBuy(p, 'Buy on eBay', 'btn btn-1 btn-s bbar-b') +
+      '</div></aside>';
+    }
     if (out(p)) { return ''; }
     return '<aside class="bbar js-only" id="bbar" aria-label="Buy the ' + esc(named(p)) + '" data-dated><div class="bbar-in">' +
       (p.pack ? '<img class="bbar-im" src="' + esc(pack(p, true, root)) + '" alt="" width="480" height="600" loading="lazy" decoding="async">' : '') +
@@ -736,6 +827,25 @@
     '</div></aside>';
   }
 
+  /* A sold-out product's second listing on its page: a block of its own in the buy box, under the bag's status (on a
+     phone, right under the gallery, where Buy on eBay would be), with its pack, price for every package, per-serving
+     price, check date and Buy; and a line saying the photos above are the bag's, not its. */
+  function alsoPanel(p) {
+    var a = also(p);
+    if (!a) { return ''; }
+    return '<section class="alt" id="' + esc(a.name) + '" aria-labelledby="' + esc(a.name) + '-h" data-dated>' +
+      '<h2 class="alt-h" id="' + esc(a.name) + '-h">Also as a ' + esc(hold(a.name)) + '</h2>' +
+      '<p class="alt-d"><span class="nw">' + esc(alsoCount(a)) + '</span>, <span class="nw">' + glue(a.each) + '</span>&nbsp;each: ' +
+        '<span class="nw">' + a.servings + ' servings</span> in all, <span class="nw">' + a.per + ' per ' + esc(a.unit) + '</span>.</p>' +
+      '<p class="alt-p"><span class="price">' + money(a.price) + '</span> <span class="pps">' + esc(alsoPer(a)) + ' a serving</span></p>' +
+      '<p class="alt-u">The price is ' + alsoFor(a) + ' ' + esc(a.units) + '.</p>' +
+      '<p class="alt-w">On its own eBay listing, checked <span class="nw">' + esc(a.ebay.checkedText) + '</span>. eBay shows the current price and availability.</p>' +
+      '<a class="btn btn-1" id="buy-two" href="' + esc(a.ebay.url) + '" target="_blank" rel="noopener">Buy the ' + esc(hold(a.name)) + ' on eBay ' + ICON.ne +
+        '<span class="sr"> (opens the eBay listing for the ' + esc(alsoName(p)) + ' in a new tab)</span></a>' +
+      '<p class="alt-n">The photos on this page are of the ' + glue(p.size.text.replace(/ \(.*\)$/, '')) + '&nbsp;bag. The ' + esc(hold(a.name)) + '’s listing shows its own ' + esc(a.units) + '; the one ' +
+        'photographed there is printed ' + esc(a.date.kind.toLowerCase()) + ' ' + esc(day(a.date.text)) + ', and a ' + esc(hold(a.name)) + ' bought now may carry another&nbsp;date.</p>' +
+    '</section>';
+  }
   function productMain(p, L, root) {
     var sl = slides(p, root), first = sl[0];
     var size = /^(.*) \((.*)\)$/.exec(p.size.text) || [p.size.text, p.size.text, ''];
@@ -799,7 +909,11 @@
           '<p class="summary">' + glue(p.summary).replace(/&nbsp;oz (bag|pouch)/g, '&nbsp;oz&nbsp;$1').replace(/(\S)-(\S)/g, '$1\u2011$2') + '</p>' +
           '<div class="buy" data-dated>' +
             (out(p) ? '<p class="buy-price"><span class="price is-out">Sold out</span></p>' +
-                '<p class="when">On eBay, checked ' + esc(p.stock.checkedText) + '.</p>' +
+                /* on a phone the two-pack's block sits under the gallery, past the first screen: the bag's status line
+                   points down to it (within the two lines its date may take); beside the gallery, from 900 px, it shows */
+                '<p class="when">On eBay, checked ' + esc(p.stock.checkedText) + '.' + (also(p) ? '<span class="when-two"> <a href="#' + esc(also(p).name) + '">See the ' +
+                  esc(hold(also(p).name)) + ' below</a></span>' : '') + '</p>' +
+                alsoPanel(p) +
                 '<a class="btn btn-2" id="instead" href="' + esc(instead(p, root).href) + '">' + esc(instead(p, root).text) + '</a>' +
                 (sameBrand(p) ? '<p class="how">Its other flavors and bundles have their own listings. <a class="nw" href="' + esc(shopHref(root, 'q', p.brand)) + '">See ' + esc(p.brand) + ' in the shop</a></p>'
                   : '<p class="how">Every purchase is completed on eBay. <a class="nw" href="' + esc(root) + 'help.html">How buying works</a></p>')
@@ -859,7 +973,10 @@
       var cat = catOf(L, p.category), lb = L.labels && L.labels[p.id];
       /* a bundle is found by the words its listing uses: its total, "2-pack", "bundle" */
       var bundle = p.bundle ? [p.bundle.total, p.bundle.n + '-pack', 'pack bundle', ({ 2: 'two', 3: 'three' })[p.bundle.n] || ''].join(' ') : '';
-      var hay = [p.brand, p.name, p.flavor, p.summary, cat && cat.name, p.size.text, bundle,
+      /* and a product's second listing by the words its own listing uses ("two-pack", "2-pack", "pouches", its sizes) */
+      var a = also(p);
+      var two = a ? [a.name, a.n + '-pack', 'pack bundle', ({ 2: 'two', 3: 'three' })[a.n] || '', a.units, a.each, a.total].join(' ') : '';
+      var hay = [p.brand, p.name, p.flavor, p.summary, cat && cat.name, p.size.text, bundle, two,
         (p.facts || []).map(function (f) { return f.join(' '); }).join(' '),
         (p.ingredients || []).join(' '), (p.label || []).join(' '), (p.notes || []).join(' '),
         p.facet.flavor.join(' '), p.facet.source.join(' '), p.facet.label.join(' '),
@@ -946,6 +1063,11 @@
 
   function pageTitle(p) { return fullName(p) + ', ' + p.flavor + ' — Venerabull Life'; }
   function pageDescription(p, L) {
+    var a = also(p);
+    if (out(p) && a) {
+      return p.summary + ' Sold out on eBay when checked ' + p.stock.checkedText + '. Also listed as a ' + a.name + ' of ' + alsoCount(a) + ', ' + alsoEach(a) + ' each: ' +
+        money(a.price) + ' ' + alsoFor(a) + ' on eBay when checked ' + a.ebay.checkedText + '.';
+    }
     if (out(p)) { return p.summary + ' Sold out on eBay when checked ' + p.stock.checkedText + '.'; }
     return p.summary + ' ' + money(p.price) + ' on eBay when checked ' + checkedOf(p, L) + '; bought through the eBay listing.';
   }
@@ -960,7 +1082,7 @@
     card: card, cards: cards, row: row, priceNote: priceNote, cmpTable: cmpTable, cmpNote: cmpNote, howListing: howListing, listingDl: listingDl,
     intro: intro, homeChips: homeChips, homeCats: homeCats, productMain: productMain, pageTitle: pageTitle, pageDescription: pageDescription,
     pack: pack, slides: slides, galNote: galNote, factsPanel: factsPanel, labelSection: labelSection, catTiles: catTiles,
-    out: out, shelf: shelf, partNote: partNote,
+    out: out, shelf: shelf, partNote: partNote, termsNote: termsNote, also: also, alsoName: alsoName,
     fold: fold, words: words, searchIndex: searchIndex, parseQuery: parseQuery, searchHit: searchHit, freeClaims: freeClaims
   };
   g.LIFE_RENDER = R;

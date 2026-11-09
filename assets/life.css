@@ -449,7 +449,15 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; a
 /* a sold-out product: the status where its price would be, in the price's size */
 .price.is-out { color: var(--ink-2); font-variant-numeric: normal; }
 .card-when { font-size: 12.5px; color: var(--ink-3); margin: 2px 0 0; }
-.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 10px; min-height: 54px; }
+.card-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 8px; margin-top: auto; padding-top: 10px; min-height: 54px; }
+/* a card's second listing (a sold-out bag's two-pack, an item of its own): set apart by a rule, in two lines, what it is
+   and its pack, then its price for every package with the date it was checked; its Buy is in the foot, where a card's
+   Buy on eBay sits. Two lines, so a row of cards beside it grows by little */
+.card-alt { margin: 10px 0 0; padding-top: 9px; border-top: 1px solid var(--line); }
+.card-alt-d { font-size: 13.5px; color: var(--ink); margin: 0; }
+.card-alt-p { font-size: 12.5px; color: var(--ink-3); margin: 1px 0 0; }
+.card-alt-p .price { font-size: 16px; font-weight: 500; letter-spacing: -.01em; color: var(--ink); }
+.card-alt .card-alt-b { margin: 2px 0 -10px -2px; }
 .card-go { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; color: var(--ink); transition: gap var(--t) var(--ease); }
 .card-buy {
   position: relative; z-index: 2; display: inline-flex; align-items: center; min-height: 44px; padding: 0 2px; font-size: 13.5px;
@@ -804,6 +812,21 @@ html.enhanced [data-page="shop"] .search-t, html.enhanced [data-page="home"] .se
 .buy .how a { color: var(--ink); text-underline-offset: 3px; }
 .buy-store { font-size: 13.5px; color: var(--ink-2); margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
 .buy-store a { color: var(--ink); text-underline-offset: 3px; white-space: nowrap; }
+/* a sold-out product's second listing, in its buy box under the bag's status: set apart by the buy box's rule, named
+   in the brand's small capitals, with its own price, per-serving price, date and Buy; then which photos are whose */
+.alt { margin: 0; padding-top: 18px; border-top: 1px solid var(--line); }
+.alt-h { margin: 0; font-size: .74rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--bronze-d); }
+.alt-d { margin: 8px 0 0; font-size: 15px; line-height: 1.45; color: var(--ink); text-wrap: pretty; }
+.alt-p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 10px 0 0; }
+.alt-p .price { font-size: 28px; font-weight: 400; letter-spacing: -.015em; line-height: 1.1; }
+.alt-p .pps { font-size: 15px; color: var(--ink-2); }
+.alt-u { margin: 6px 0 0; font-size: 15px; color: var(--ink); }
+.alt-w { margin: 4px 0 16px; font-size: 13.5px; line-height: 1.45; color: var(--ink-3); }
+.alt-n { margin: 12px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+.buy .alt + .btn { margin-top: 20px; }
+/* the bag's status line's way down to its two-pack: needed only on a phone, where the block is past the first screen */
+.when-two { display: none; }
+.when-two a { color: var(--ink); text-underline-offset: 3px; white-space: nowrap; }
 @media (hover: hover) {
   .brand:hover .brand-w span { color: var(--ink); }
   .foot .brand:hover .brand-w span { color: var(--on-dark); }
@@ -1357,6 +1380,10 @@ html.enhanced .stage img { cursor: zoom-in; }
   .buy > .when { order: 4; margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; }
   .gal { order: 5; margin: 14px 0 0; position: static; grid-template-columns: 1fr; justify-items: center; }
   .buy > .btn { margin-top: 22px; }
+  /* a sold-out page's two-pack comes first under the gallery, 22 px under it, with its own rule (from 360 to 559 px the
+     gallery's closing hairline sets it apart instead: see there) */
+  .buy > .alt { margin-top: 22px; }
+  .when-two { display: inline; }
   .info > .summary { order: 7; margin-top: 26px; }
   .gal .stage-w, .gal-note { grid-column: auto; grid-row: auto; }
   /* the arrows and Full size leave the picture for a row under it; only the
@@ -1615,6 +1642,8 @@ html.enhanced .stage img { cursor: zoom-in; }
      last line and 22 px over Buy on eBay: from the line's baseline that is
      about 22 px too, so the rule sits balanced between them */
   .gal-note { justify-self: stretch; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  /* a sold-out page's two-pack begins 22 px under that hairline, which sets it apart, so it draws no rule of its own */
+  .buy > .alt { padding-top: 0; border-top: 0; }
   /* home: where the picture stops at 4:3 short of the first screen's height,
      the next section starts lower by what that leaves past 35 px, so its
      heading always begins under the glass's edge */

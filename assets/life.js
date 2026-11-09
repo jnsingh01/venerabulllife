@@ -845,7 +845,7 @@
       } else {
         grid.className = 'grid';
         grid.removeAttribute('data-gen');
-        grid.innerHTML = R.cards(shown, ROOT) + R.storeTile();
+        grid.innerHTML = R.cards(shown, ROOT, S.q ? query() : null) + R.storeTile();
         settle(grid);
       }
       if (kind && kind !== 'pop') { save(kind); }
@@ -1390,7 +1390,9 @@
      price and Buy are always one glance away, and never shown twice. While it shows,
      a focused element is never left underneath it. */
   function initBuyBar() {
-    var bb = $('#bbar'), price = $('.buy-price'), btn = $('#buy'), foot = $('.foot'), topEl = $('#top');
+    /* a sold-out page's second listing (the two-pack) has its own price and Buy, in its block in the buy box */
+    var two = $('#buy-two');
+    var bb = $('#bbar'), price = two ? two.closest('.alt').querySelector('.alt-p') : $('.buy-price'), btn = two || $('#buy'), foot = $('.foot'), topEl = $('#top');
     if (!bb || !price || !btn || !window.matchMedia) { return; }
     var mq = window.matchMedia('(max-width: 899px)'), queued = false;
     /* measured on every scroll (not by an observer, which stays silent when a

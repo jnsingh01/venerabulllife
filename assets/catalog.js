@@ -26,7 +26,14 @@
    way to buy until it is restocked under the same item number. A listing whose
    own records verify only some of its terms (`ebay.terms`, from condition,
    shipping, from and returns) shows only those; the rest are left to the
-   listing. */
+   listing.
+
+   `also` is a second listing of the same flavor in another pack, an item of its
+   own (Equip Chocolate's two-pack of 9 Nov 2026): its pack count, each
+   package's size, its servings, its price for every package together and its
+   listing, checked on its own date. The site has no photo of it, so it is
+   offered in words beside the product, never under the product's own picture
+   as if it were that package; its terms are left to its listing. */
 window.LIFE = {
   checked: '2026-10-30',
   checkedText: '30 Oct 2026',
@@ -91,6 +98,19 @@ window.LIFE = {
          is set, no page shows a price for it or a way to buy it, and every place
          it appears says it was sold out when checked on that date */
       stock: { out: true, checked: '2026-11-08', checkedText: '8 Nov 2026' },
+      /* Chocolate is also listed as a two-pack, a distinct item published on 9 Nov 2026 (the seller's inventory receipt
+         of that day: "Equip Chocolate Protein two-pack, 18.2 oz total", $39.99, verified 04:27 to 05:15 EST): two smaller
+         pouches, each printing "NET WT. 9.1 OZ (0.57 LBS) 257g" and "Servings Per Container 10", 21 g of protein a
+         scoop and the same three ingredients, the photographed pouch "BEST BY: 08/2028" (its listing's photos 1 and 2);
+         "Price is for both pouches together". It is the price of both pouches; no count of how many are left is shown */
+      also: { name: 'two-pack', n: 2, unit: 'pouch', units: 'pouches', each: '9.1 oz (257 g)', total: '18.2 oz', per: 10, servings: 20, protein: 21,
+              price: 39.99, date: { kind: 'Best by', text: 'August 2028', printed: '08/2028' },
+              /* what its pouches print they are free of, read from its listing's photos: "NO WHEY, DAIRY, SOY, GLUTEN,
+                 OR SEED OILS." (back, photos 3 and 4), "DAIRY & WHEY FREE" and "NO ADDED SUGAR" (front, photo 1). Never
+                 "artificial sweeteners": that line is the 18.1 oz bag's, so a free-from search for it offers the bag, sold
+                 out, and not the two-pack */
+              free: ['whey', 'dairy', 'soy', 'gluten', 'seed oils', 'added sugar'],
+              ebay: { item: '407350582071', url: 'https://www.ebay.com/itm/407350582071', checked: '2026-11-09', checkedText: '9 Nov 2026' } },
       /* the label's "NO WHEY, DAIRY, SOY, ARTIFICIAL SWEETENERS, GLUTEN, OR SEED OILS." (photo 5) */
       free: ['whey', 'dairy', 'soy', 'artificial sweeteners', 'gluten', 'seed oils'],
       /* the packshot: this package lifted from photo 2 onto the plain ground, at
