@@ -500,7 +500,13 @@
         protein: function (a, b) { return b.protein - a.protein; },
         date: function (a, b) { return a.date.sort < b.date.sort ? 1 : (a.date.sort > b.date.sort ? -1 : 0); }
       }[S.sort];
-      /* whatever the order, a sold-out product comes after the rest */
+      /* in the shop's own order, a search's own matches first (their brand, name and flavor hold every word searched);
+         whatever the order, a sold-out product comes after the rest */
+      if (!by && S.q) {
+        var qr = query(), rank = {};
+        list.forEach(function (p, i) { rank[p.id] = [R.searchRank(IX, qr, p.id), i]; });
+        by = function (a, b) { return rank[b.id][0] - rank[a.id][0] || rank[a.id][1] - rank[b.id][1]; };
+      }
       return R.shelf(by ? list.slice().sort(by) : list.slice());
     }
     function active() { return L.facets.reduce(function (n, g) { return n + S.f[g.id].length; }, 0) + (S.q ? 1 : 0); }

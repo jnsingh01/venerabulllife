@@ -87,6 +87,8 @@
   function termKeys(p) { return (p && p.ebay && p.ebay.terms) || TERMS.map(function (t) { return t[0]; }); }
   function partTerms(p) { return !!(p.ebay && p.ebay.terms); }
   function unseen(p) { return TERMS.filter(function (t) { return termKeys(p).indexOf(t[0]) < 0; }).map(function (t) { return t[1].toLowerCase(); }); }
+  /* the terms a listing's records verify, by their names ("condition, shipping and item location") */
+  function seen(p) { return TERMS.filter(function (t) { return termKeys(p).indexOf(t[0]) >= 0; }).map(function (t) { return t[1].toLowerCase(); }); }
   /* the shown listings whose terms are only partly recorded */
   function partListed(L) { return L.products.filter(function (p) { return !out(p) && partTerms(p); }); }
   /* every listing whose terms are all recorded, with each one's date; then which are not covered */
@@ -100,7 +102,8 @@
     var lst = L.listing;
     var say = { condition: lst.condition.toLowerCase() + ' condition', shipping: lst.shipping.toLowerCase(), from: 'item located in ' + day(lst.from), returns: lst.returns.replace(/\.$/, '').toLowerCase() };
     return partListed(L).map(function (p) {
-      return possessive(p.brand + ' ' + p.flavor) + ' relisted listing showed ' + andList(termKeys(p).map(function (k) { return say[k]; })) + ' when it was published on ' + day(termsOf(p, L)) +
+      /* "relisted" only for a listing that replaced an earlier one */
+      return possessive(p.brand + ' ' + p.flavor) + (p.ebay.replaced ? ' relisted' : '') + ' listing showed ' + andList(termKeys(p).map(function (k) { return say[k]; })) + ' when it was published on ' + day(termsOf(p, L)) +
         '. Its ' + andList(unseen(p)) + ' are shown on the listing.';
     }).join(' ');
   }
@@ -115,12 +118,17 @@
      through its current listing may carry another, which isn't recorded) says
      whose date it is wherever it is shown, and the product page says what
      that means. */
-  var PHOTO_DATE = 'on the bag in the photos';
-  var PHOTO_DATE_NOTE = 'That date is the one printed on the bag in the photos. A bag bought through the current listing may carry a different date; ' +
-    'to confirm it, ask through “Contact seller” on the listing.';
+  /* the package a product is sold in, as its listing names it: a bag, or a pouch (`noun`; Just Ingredients' Lemon Lime
+     electrolytes), so a date is tied to the package in the photos by its own name */
+  function noun(p) { return (p && p.noun) || 'bag'; }
+  function PHOTO_DATE(p) { return 'on the ' + noun(p) + ' in the photos'; }
+  function PHOTO_DATE_NOTE(p) {
+    return 'That date is the one printed on the ' + noun(p) + ' in the photos. A ' + noun(p) + ' bought through the current listing may carry a different date; ' +
+      'to confirm it, ask through “Contact seller” on the listing.';
+  }
   /* the same note on a sold-out product's page, which offers no way to buy */
-  var PHOTO_DATE_OUT = 'That date is the one printed on the bag in the photos.';
-  function whose(p) { return p.date.photographed ? ' ' + PHOTO_DATE : ''; }
+  function PHOTO_DATE_OUT(p) { return 'That date is the one printed on the ' + noun(p) + ' in the photos.'; }
+  function whose(p) { return p.date.photographed ? ' ' + PHOTO_DATE(p) : ''; }
   /* A date no photo shows (`date.none`: Equip's strawberry pouches print theirs
      where these photos don't reach) is never set out as printed: the page says
      the photos don't show it, and what the listing recorded, and when. */
@@ -440,7 +448,7 @@
         '<p class="card-sub">' + glue(p.flavor) + '&nbsp;· ' + (p.bundle
           ? '<span class="nw">' + esc(count(p)) + '</span>, <span class="nw">' + esc(p.bundle.each) + '</span> each'
           : '<span class="nw">' + esc(p.size.text) + '</span>') + '</p>' +
-        '<p class="card-facts">' + p.protein + '&nbsp;g protein · ' + esc(servingsText(p).replace('About', 'about')).replace(/ /g, '&nbsp;') + '&nbsp;servings' + (p.bundle ? '&nbsp;in&nbsp;all' : '') + '</p>' +
+        '<p class="card-facts">' + (p.lead ? glue(p.lead.amount) + '&nbsp;' + esc(p.lead.name.toLowerCase()) : p.protein + '&nbsp;g protein') + ' · ' + esc(servingsText(p).replace('About', 'about')).replace(/ /g, '&nbsp;') + '&nbsp;servings' + (p.bundle ? '&nbsp;in&nbsp;all' : '') + '</p>' +
         (out(p) ? '<p class="card-price"><span class="price is-out">Sold out</span></p>' +
             '<p class="card-when">On eBay, checked <span class="nw">' + esc(p.stock.checkedText) + '</span></p>'
           : '<p class="card-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
@@ -505,7 +513,7 @@
           (out(p) ? td('Listed price', 'Sold out <small>checked <span class="nw">' + esc(p.stock.checkedText) + '</span></small>', true) +
               td('Per serving', '<span aria-hidden="true">–</span><span class="sr">none while sold out</span>', true)
             : td('Listed price', money(p.price), true) + td('Per serving', esc(perServing(p)), true)) +
-          td('Date on the bag', p.date.none ? 'Not shown in the photos' : esc(p.date.kind + ' ' + day(p.date.text) + (p.date.photographed ? (', ' + PHOTO_DATE).replace(/ (\S+)$/, '\u00a0$1') : ''))) + '</tr>';
+          td('Date on the bag', p.date.none ? 'Not shown in the photos' : esc(p.date.kind + ' ' + day(p.date.text) + (p.date.photographed ? (', ' + PHOTO_DATE(p)).replace(/ (\S+)$/, '\u00a0$1') : ''))) + '</tr>';
       }).join('') + '</tbody>';
   }
   function cmpNote(L) { return 'Listed prices as checked on eBay on ' + checkedAll(L) + '. eBay shows the current price and availability.'; }
@@ -721,7 +729,7 @@
       '<ul>' + p.facts.map(function (f) { return '<li><b>' + esc(f[0]) + ':</b> ' + esc(f[1]) + '</li>'; }).join('') +
       (p.date.none ? '<li><b>' + esc(p.date.kind) + ':</b> not shown in these photos</li></ul>'
         : '<li><b>' + esc(p.date.kind) + ':</b> ' + esc(p.date.text) + ' (printed ' + esc(p.date.printed) + esc(whose(p)) + ')</li></ul>') +
-      p.notes.concat(p.date.none ? [out(p) ? dateNote(p).replace(/ To confirm .*$/, '') : dateNote(p)] : p.date.photographed ? [out(p) ? PHOTO_DATE_OUT : PHOTO_DATE_NOTE] : [])
+      p.notes.concat(p.date.none ? [out(p) ? dateNote(p).replace(/ To confirm .*$/, '') : dateNote(p)] : p.date.photographed ? [out(p) ? PHOTO_DATE_OUT(p) : PHOTO_DATE_NOTE(p)] : [])
         .map(function (x) { return '<p class="note">' + esc(x) + '</p>'; }).join('') +
       (lb
         ? '<p class="acc-more">' + cap1(andList(['the ' + (lb.panels.some(partial) ? '' : 'full ') + esc(lb.panels[0].title.toLowerCase()) + ' panel']
@@ -753,8 +761,8 @@
           (a ? 'The ' + esc(hold(a.name)) + '’s price is as listed on eBay when its own listing was checked on ' + esc(a.ebay.checkedText) + '; its size, servings, protein and date are from the ' +
             esc(a.units) + ' in that listing’s photos. ' : '')
         : partTerms(p) ? (termsOf(p, L) === checkedOf(p, L)
-          ? 'The price and ' + esc(andList(termKeys(p))) + ' are as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + '. '
-          : 'The price is as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + ', and the ' + esc(andList(termKeys(p))) + ' as listed on ' + esc(termsOf(p, L)) + '. ')
+          ? 'The price and ' + esc(andList(seen(p))) + ' are as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + '. '
+          : 'The price is as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + ', and the ' + esc(andList(seen(p))) + ' as listed on ' + esc(termsOf(p, L)) + '. ')
         : termsOf(p, L) === checkedOf(p, L)
         ? 'The price, condition, shipping and returns are as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + '. '
         : 'The price is as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + ', and the condition, shipping and returns as listed on ' + esc(termsOf(p, L)) + '. ') +
@@ -846,6 +854,19 @@
         'photographed there is printed ' + esc(a.date.kind.toLowerCase()) + ' ' + esc(day(a.date.text)) + ', and a ' + esc(hold(a.name)) + ' bought now may carry another&nbsp;date.</p>' +
     '</section>';
   }
+  /* Where a shopper chooses a bag that comes in another size elsewhere (`sizeNote`: the large Vanilla Bean bag), the
+     difference is said beside Buy: this bag's size, servings and price, then the other bag's, named as a separate
+     listing Life doesn't offer and never linked, both prices with their check dates. */
+  function sizeNote(p, L) {
+    var n = p.sizeNote;
+    if (!n) { return ''; }
+    var oz = function (t) { return parseFloat(t); }, d = Math.round((oz(p.size.text) - oz(n.size)) * 100) / 100, s = p.servings.n - n.servings;
+    var words = { 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten' };
+    return '<p class="buy-size">This is the larger bag: <span class="nw">' + glue(p.size.text.replace(/ \(.*\)$/, '')) + '</span> and ' + p.servings.n + '&nbsp;servings for ' +
+      '<span class="nw">' + money(p.price) + '</span>. The regular ' + esc(n.name) + ' bag is a separate eBay listing, not offered on Life: <span class="nw">' + glue(n.size) +
+      '</span> and ' + n.servings + '&nbsp;servings for <span class="nw">' + money(n.price) + '</span>, so this bag holds <span class="nw">' + glue(d.toFixed(2) + ' oz') + '</span> and ' +
+      (words[s] || s) + '&nbsp;servings more. Both prices checked <span class="nw">' + esc(checkedOf(p, L)) + '</span>.</p>';
+  }
   function productMain(p, L, root) {
     var sl = slides(p, root), first = sl[0];
     var size = /^(.*) \((.*)\)$/.exec(p.size.text) || [p.size.text, p.size.text, ''];
@@ -854,8 +875,9 @@
     var kv = [
       p.bundle ? ['Size', esc(count(p)) + ' <small><span class="nw">' + esc(p.bundle.each) + ' each;</span> <span class="nw">' + esc(p.bundle.total) + ' together</span></small>', 'kv-wide']
         : ['Size', esc(size[1]) + (size[2] ? ' <small>' + esc(size[2]) + '</small>' : '')],
-      ['Servings', esc(servingsText(p)) + (p.bundle ? ' <small>in all, ' + p.bundle.servings + '&nbsp;per&nbsp;' + esc(p.bundle.unit) + '</small>' : ' <small>per bag</small>')],
-      ['Protein', p.protein + ' g <small>per serving</small>'],
+      ['Servings', esc(servingsText(p)) + (p.bundle ? ' <small>in all, ' + p.bundle.servings + '&nbsp;per&nbsp;' + esc(p.bundle.unit) + '</small>' : ' <small>per ' + esc(noun(p)) + '</small>')],
+      /* a product with no protein to speak of leads with its own figure instead (`lead`: the electrolytes' sodium) */
+      p.lead ? [esc(p.lead.name), glue(p.lead.amount) + ' <small>per serving</small>'] : ['Protein', p.protein + ' g <small>per serving</small>'],
       /* "Strawberries &" never parts from "Cream" */
       ['Flavor', esc(p.flavor).replace('&amp; ', '&amp;&nbsp;')]
     ];
@@ -920,6 +942,7 @@
               : '<p class="buy-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
                 (p.bundle ? '<p class="buy-unit">The price is for ' + esc(thing(p)) + '.</p>' : '') +
                 '<p class="when">Listed on eBay, checked ' + esc(checkedOf(p, L)) + '. eBay shows the current price and availability.</p>' +
+                sizeNote(p, L) +
                 '<a class="btn btn-1" id="buy" href="' + esc(p.ebay.url) + '" target="_blank" rel="noopener">Buy on eBay ' + ICON.ne + '<span class="sr"> (opens the eBay listing in a new tab)</span></a>' +
                 '<p class="how">You’ll complete your purchase on eBay. <a href="' + esc(root) + 'help.html">How buying works</a></p>') +
             '<p class="buy-store">' + esc(NOTICE) + ' ' + storeLink('Visit the store') + '</p>' +
@@ -976,7 +999,9 @@
       /* and a product's second listing by the words its own listing uses ("two-pack", "2-pack", "pouches", its sizes) */
       var a = also(p);
       var two = a ? [a.name, a.n + '-pack', 'pack bundle', ({ 2: 'two', 3: 'three' })[a.n] || '', a.units, a.each, a.total].join(' ') : '';
-      var hay = [p.brand, p.name, p.flavor, p.summary, cat && cat.name, p.size.text, bundle, two,
+      /* a product with no protein (the electrolytes, "Protein 0g") is never found by "protein" through its category's name */
+      var catName = cat ? (p.protein ? cat.name : cat.name.replace(/\bprotein\b/gi, '')) : '';
+      var hay = [p.brand, p.name, p.flavor, p.summary, catName, p.size.text, bundle, two,
         (p.facts || []).map(function (f) { return f.join(' '); }).join(' '),
         (p.ingredients || []).join(' '), (p.label || []).join(' '), (p.notes || []).join(' '),
         p.facet.flavor.join(' '), p.facet.source.join(' '), p.facet.label.join(' '),
@@ -985,7 +1010,9 @@
         lb ? lb.statements.filter(function (s) { return s.complete && (s.kind === 'allergen' || s.items); }).map(function (s) { return s.text; }).join(' ') : ''].join(' ');
       var hazard = (lb ? lb.statements.filter(function (s) { return s.kind === 'allergen' || s.kind === 'facility'; }).map(function (s) { return s.text; }) : [])
         .concat((p.notes || []).filter(function (x) { return /contain/i.test(x); })).join(' ');
-      return { id: p.id, hay: ' ' + words(hay).join(' ') + ' ', free: (p.free || []).map(stem), hazard: ' ' + words(hazard).map(one).join(' ') + ' ' };
+      return { id: p.id, hay: ' ' + words(hay).join(' ') + ' ', free: (p.free || []).map(stem), hazard: ' ' + words(hazard).map(one).join(' ') + ' ',
+        /* what the product itself is called: its brand, name and flavor */
+        own: ' ' + words([p.brand, p.name, p.flavor].join(' ')).join(' ') + ' ' };
     });
     var vocab = [];
     list.forEach(function (x) { x.free.forEach(function (t) { if (vocab.indexOf(t) < 0) { vocab.push(t); } }); });
@@ -1052,6 +1079,13 @@
     var x = IX.list.filter(function (e) { return e.id === id; })[0];
     return !!x && hit(x, Q);
   }
+  /* A search's own matches first: a product whose brand, name and flavor hold every word searched ("vanilla bean":
+     the Vanilla Bean bag) comes before one that only mentions them (an ingredient list's "vanilla bean"); otherwise the
+     shop's own order stands. 1 or 0. */
+  function searchRank(IX, Q, id) {
+    var x = IX.list.filter(function (e) { return e.id === id; })[0];
+    return x && Q.tokens.length && Q.tokens.every(function (t) { return hasWord(x.own, t, Q.whole); }) ? 1 : 0;
+  }
   /* every free-from claim the packages here print, with how many products a
      search for it finds: what the shop offers when a free-from search finds none */
   function freeClaims(IX) {
@@ -1083,7 +1117,7 @@
     intro: intro, homeChips: homeChips, homeCats: homeCats, productMain: productMain, pageTitle: pageTitle, pageDescription: pageDescription,
     pack: pack, slides: slides, galNote: galNote, factsPanel: factsPanel, labelSection: labelSection, catTiles: catTiles,
     out: out, shelf: shelf, partNote: partNote, termsNote: termsNote, also: also, alsoName: alsoName,
-    fold: fold, words: words, searchIndex: searchIndex, parseQuery: parseQuery, searchHit: searchHit, freeClaims: freeClaims
+    fold: fold, words: words, searchIndex: searchIndex, parseQuery: parseQuery, searchHit: searchHit, searchRank: searchRank, freeClaims: freeClaims, noun: noun
   };
   g.LIFE_RENDER = R;
   if (typeof module !== 'undefined' && module.exports) { module.exports = R; }

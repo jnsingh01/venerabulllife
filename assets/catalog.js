@@ -571,6 +571,116 @@ window.LIFE = {
         { n: 1, alt: 'Front of the Ka’Chava Strawberry bag on a shelf' },
         { n: 2, alt: 'Back of the bag: nutrition facts, the ingredients and the date printed on this bag', panel: [15, 370, 210, 660] }
       ]
+    },
+    /* The two Just Ingredients offers published on 9 Nov 2026: each listing's own published
+       gallery, label and record, nothing borrowed from another size or flavor of the same brand; prices as the seller's
+       receipt of that day shows them, terms as each live listing showed them that day */
+    {
+      id: 'ji-lemon-lime',
+      category: 'protein',
+      brand: 'Just Ingredients',
+      name: 'Performance Electrolytes',
+      flavor: 'Lemon Lime',
+      /* its listing sells one pouch, and the date is tied to the pouch in the photos */
+      noun: 'pouch',
+      summary: 'A lemon lime electrolyte drink mix: 600 mg of sodium and five electrolytes per scoop, and 30 servings in a 7.61 oz pouch. The label says no artificial flavors or sweeteners.',
+      /* the front's "Net Wt 7.61oz (.47lb) (216g)" and "30 SERVINGS"; the panel's "Servings Per Container: 30" */
+      size: { text: '7.61 oz (216 g)', grams: 216 },
+      servings: { n: 30, about: false },
+      /* the panel prints "Protein 0g": no protein, so it leads with its sodium */
+      protein: 0,
+      lead: { name: 'Sodium', amount: '600 mg' },
+      facts: [
+        ['Sodium', '600 mg per serving'],
+        ['Servings', '30 per pouch'],
+        ['Electrolytes', 'Sodium, potassium, magnesium, calcium and chloride, as its panel lists them']
+      ],
+      ingredients: null,
+      /* the back's certain claims (photos 3 and 4): NO ARTIFICIAL FLAVORS OR SWEETENERS, NO ARTIFICIAL COLORING, and its
+         icon row's GLUTEN FREE, EGG FREE, SOY FREE, DAIRY FREE, NON GMO. No allergen line is printed in its photos */
+      label: ['No artificial flavors or sweeteners', 'No artificial coloring', 'Gluten free', 'Egg free', 'Soy free', 'Dairy free', 'Non-GMO'],
+      notes: [],
+      /* printed "BB: 08/10/2028" on the pouch in the photos (photo 3, under its lot); a pouch bought through the listing
+         may carry another date, which isn't recorded */
+      date: { kind: 'Best by', text: 'August 10, 2028', printed: '08/10/2028', sort: '2028-08-10', photographed: true },
+      facet: { flavor: ['Lemon lime'], source: [], label: ['Dairy free'] },
+      price: 32.99,
+      /* its row in the seller's receipt of 9 Nov 2026 ($32.99); its live page that day showed New, free standard
+         shipping and New York; its returns are left to the listing */
+      ebay: { item: '407350564960', url: 'https://www.ebay.com/itm/407350564960', checked: '2026-11-09', checkedText: '9 Nov 2026',
+              termsChecked: '2026-11-09', termsCheckedText: '9 Nov 2026', terms: ['condition', 'shipping', 'from'] },
+      /* each printed on this label: "NO ARTIFICIAL FLAVORS OR SWEETENERS", "NO ARTIFICIAL COLORING", the front's "0g ADDED
+         SUGAR", and the icon row's GLUTEN FREE, EGG FREE, SOY FREE, DAIRY FREE, NON GMO */
+      free: ['artificial flavors', 'artificial sweeteners', 'artificial coloring', 'added sugar', 'gluten', 'egg', 'soy', 'dairy', 'gmo'],
+      /* the packshot: this pouch lifted from photo 1 onto the plain ground, at its native size (636x795), colours as
+         photographed (balanced: false) */
+      pack: { photo: 1, w: 636, h: 795, balanced: false },
+      photos: [
+        { n: 1, alt: 'The Just Ingredients Lemon Lime electrolytes pouch on a shelf' },
+        { n: 2, alt: 'The front of the pouch, close up' },
+        { n: 3, alt: 'Back of the pouch: the nutrition facts, and the lot and date printed on this pouch', panel: [165, 260, 410, 640] },
+        { n: 4, alt: 'Back of the pouch: the ingredients and the barcode' },
+        { n: 5, alt: 'The front of the pouch, at an angle' }
+      ]
+    },
+    {
+      id: 'ji-vanilla-bean-large',
+      category: 'protein',
+      brand: 'Just Ingredients',
+      name: 'Protein Powder',
+      flavor: 'Vanilla Bean',
+      /* the large bag, as its listing names it ("LARGE … 29.27 oz 830g 25 Servings"): the bag itself prints no size word,
+         only "Net Wt 29.27oz (1.8lb) (830g)" (photo 1) and "25 SERVINGS" (photo 3) */
+      summary: 'The large Vanilla Bean bag: 22 g of protein per serving and 25 servings in a 29.27 oz bag. The label says no natural or artificial flavors.',
+      size: { text: '29.27 oz (830 g)', grams: 830 },
+      servings: { n: 25, about: false },
+      protein: 22,
+      facts: [
+        ['Protein', '22 g per serving'],
+        ['Servings', '25 per bag'],
+        ['First ingredient', '“100% Grass-Fed Non-Denatured Whey Protein”, as printed']
+      ],
+      ingredients: null,
+      /* the back's certain claims (photo 5): NO NATURAL FLAVORS, NO ARTIFICIAL FLAVORS OR SWEETENERS, and its icon row's EGG
+         FREE, SOY FREE, NON GMO. Not the badge at the row's far left, whose words can't be read with certainty */
+      label: ['No natural flavors', 'No artificial flavors or sweeteners', 'Egg free', 'Soy free', 'Non-GMO'],
+      /* the label's own words: "CONTAINS COCONUT & DAIRY" (photo 5) */
+      notes: ['Contains: coconut & dairy.'],
+      /* printed "BB:02/03/2028" on the bag in the photos (photos 5 and 6); its listing gives it as February 3, 2028. A bag
+         bought through the listing may carry another date, which isn't recorded */
+      date: { kind: 'Best by', text: 'February 3, 2028', printed: '02/03/2028', sort: '2028-02-03', photographed: true },
+      facet: { flavor: ['Vanilla'], source: ['Whey'], label: [] },
+      /* whey is the first ingredient, not the only protein: the back prints "PLANT AND ANIMAL BASED – 4 SOURCES OF
+         PROTEIN FOR INCREASED ABSORPTION" */
+      sourceNote: 'listed first; the label says its protein is plant and animal based, from four sources',
+      price: 39.99,
+      /* its row in the seller's receipt of 9 Nov 2026 ($39.99); its live page that day showed New; its shipping, item
+         location and returns are left to the listing */
+      ebay: { item: '407350600616', url: 'https://www.ebay.com/itm/407350600616', checked: '2026-11-09', checkedText: '9 Nov 2026',
+              termsChecked: '2026-11-09', termsCheckedText: '9 Nov 2026', terms: ['condition'] },
+      /* each printed on this label: "NO NATURAL FLAVORS", "NO ARTIFICIAL FLAVORS OR SWEETENERS", "NO GUMS, FILLERS, OR
+         SYNTHETIC EMULSIFIERS", EGG FREE, SOY FREE, NON GMO */
+      free: ['natural flavors', 'artificial flavors', 'artificial sweeteners', 'gums', 'fillers', 'synthetic emulsifiers', 'egg', 'soy', 'gmo'],
+      /* the four lines too small, blurred or creased to set out, named but never quoted */
+      withheld: { items: ['the footnote under its facts panel', 'the maker’s details, facility lines and FDA statement under the panel',
+                          'a badge at the far left of the back’s icon row', 'the small print beside the QR code'],
+                  photo: 4, why: 'too small, blurred or creased in these photos to set out here' },
+      /* where the shopper chooses this bag, the size it is set against: Just Ingredients' regular Vanilla Bean bag, a
+         different listing that Life doesn't offer (never linked). The seller's receipt of 9 Nov 2026: "Just Ingredients
+         Vanilla Bean Protein, 23.42 oz | 407323924609 | $29.99"; its 20 servings are this bag's listing description's
+         ("five more servings than the smaller 20-serving Vanilla Bean bag") */
+      sizeNote: { name: 'Vanilla Bean', size: '23.42 oz', servings: 20, price: 29.99, checked: '2026-11-09', checkedText: '9 Nov 2026' },
+      /* no packshot: both photos of its front have the bag touching the photo's left edge, and a packshot never shows a
+         cut bag as whole; a narrow card's crop keeps the bag (Vision's box x 0-462 of 720) */
+      cardX: '24%',
+      photos: [
+        { n: 1, alt: 'Front of the Just Ingredients Vanilla Bean bag on a shelf' },
+        { n: 2, alt: 'The front label of the bag, close up' },
+        { n: 3, alt: 'The front of the bag, with its 25 servings marking' },
+        { n: 4, alt: 'Nutrition facts panel on the back of the bag', panel: [95, 390, 335, 550] },
+        { n: 5, alt: 'Back of the bag: the ingredients, and the date printed on this bag' },
+        { n: 6, alt: 'The lower back of the bag' }
+      ]
     }
   ],
 
@@ -1123,6 +1233,447 @@ window.LIFE = {
         { photo: 2, kind: "other", text: "Contains 5g of total fat per serving. See nutrition information for fat content.", complete: true },
         { photo: 2, kind: "other", text: "Storage: Store in a cool, dry place.", complete: false },
         { photo: 2, kind: "other", text: "MADE in the USA with ingredients from around the world", complete: true }
+      ]
+    },
+    // the 9 Nov 2026 offers, from the verified transcription (notes aside)
+    "ji-lemon-lime": {
+      "panels": [
+        {
+          "photo": 3,
+          "also_in_photos": [
+            4
+          ],
+          "title": "Nutrition Facts",
+          "serving_size": "Serving size 1 Scoop (7.2g)",
+          "servings": "Servings Per Container: 30",
+          "header": {
+            "amount": "Amount per serving",
+            "dv": "% Daily Value"
+          },
+          "complete": true,
+          "rows": [
+            {
+              "name": "Calories",
+              "amount": "15",
+              "dv": "",
+              "indent": 0
+            },
+            {
+              "name": "Total Fat",
+              "amount": "0g",
+              "dv": "0%",
+              "indent": 0
+            },
+            {
+              "name": "Saturated Fat",
+              "amount": "0g",
+              "dv": "0%",
+              "indent": 1
+            },
+            {
+              "name": "Trans Fat",
+              "amount": "0g",
+              "dv": "",
+              "indent": 1
+            },
+            {
+              "name": "Cholesterol",
+              "amount": "0mg",
+              "dv": "0%",
+              "indent": 0
+            },
+            {
+              "name": "Sodium",
+              "amount": "600mg",
+              "dv": "26%",
+              "indent": 0
+            },
+            {
+              "name": "Total Carbohydrate",
+              "amount": "2g",
+              "dv": "1%",
+              "indent": 0
+            },
+            {
+              "name": "Dietary Fiber",
+              "amount": "0g",
+              "dv": "0%",
+              "indent": 1
+            },
+            {
+              "name": "Total Sugars",
+              "amount": "1g",
+              "dv": "",
+              "indent": 1
+            },
+            {
+              "name": "Includes Added Sugars",
+              "amount": "0g",
+              "dv": "0%",
+              "indent": 2,
+              "printed": "Includes 0g Added Sugars"
+            },
+            {
+              "name": "Protein",
+              "amount": "0g",
+              "dv": "0%",
+              "indent": 0
+            },
+            {
+              "name": "Vitamin D",
+              "amount": "0mcg",
+              "dv": "0%",
+              "indent": 0
+            },
+            {
+              "name": "Calcium",
+              "amount": "50mg",
+              "dv": "4%",
+              "indent": 0
+            },
+            {
+              "name": "Iron",
+              "amount": "0mg",
+              "dv": "0%",
+              "indent": 0
+            },
+            {
+              "name": "Potassium",
+              "amount": "300mg",
+              "dv": "6%",
+              "indent": 0
+            },
+            {
+              "name": "Magnesium",
+              "amount": "50mg",
+              "dv": "12%",
+              "indent": 0
+            },
+            {
+              "name": "Chloride",
+              "amount": "930mg",
+              "dv": "40%",
+              "indent": 0
+            }
+          ],
+          "footnotes": [
+            "The % Daily Value tells you how much a nutrient in a serving of food contributes to a daily diet. 2000 calories a day is used for general nutrition advice."
+          ]
+        }
+      ],
+      "ingredients": {
+        "photo": 4,
+        "also_in_photos": [
+          3
+        ],
+        "heading": "INGREDIENTS",
+        "text": "Sodium Chloride (Sea Salt, Electrolytes), Organic Lemon*, Citric Acid (Cassava Root), Potassium Citrate (Electrolyte), Magnesium Citrate (Electrolyte), Organic Coconut Water*, Lemon Extract§, Calcium Citrate (Electrolyte), Lime Extract§, Organic Stevia Leaf Extract, Organic Monk Fruit Extract"
+      },
+      "statements": [
+        {
+          "photo": 4,
+          "kind": "other",
+          "text": "*With Tapioca Starch",
+          "complete": true
+        },
+        {
+          "photo": 4,
+          "kind": "other",
+          "text": "§With Acacia Fiber",
+          "complete": true
+        },
+        {
+          "photo": 2,
+          "also_in_photos": [
+            1,
+            5
+          ],
+          "kind": "other",
+          "text": "600mg SODIUM | 0g ADDED SUGAR | 5 ELECTROLYTES",
+          "items": [
+            "600mg SODIUM",
+            "0g ADDED SUGAR",
+            "5 ELECTROLYTES"
+          ],
+          "complete": true
+        },
+        {
+          "photo": 2,
+          "also_in_photos": [
+            1,
+            5
+          ],
+          "kind": "other",
+          "text": "No Artificial Flavors | Formulated for Peak Performance | Flavored with Real Fruit | Made with Organic Coconut Water",
+          "items": [
+            "No Artificial Flavors",
+            "Formulated for Peak Performance",
+            "Flavored with Real Fruit",
+            "Made with Organic Coconut Water"
+          ],
+          "complete": true
+        },
+        {
+          "photo": 4,
+          "kind": "other",
+          "text": "GLUTEN FREE | EGG FREE | SOY FREE | DAIRY FREE | NON GMO",
+          "items": [
+            "GLUTEN FREE",
+            "EGG FREE",
+            "SOY FREE",
+            "DAIRY FREE",
+            "NON GMO"
+          ],
+          "complete": true
+        },
+        {
+          "photo": 4,
+          "kind": "other",
+          "text": "MADE WITH REAL INGREDIENTS • NO ARTIFICIAL FLAVORS OR SWEETENERS • FLAVORED WITH REAL FRUIT • NO ARTIFICIAL COLORING",
+          "complete": true
+        },
+        {
+          "photo": 4,
+          "kind": "other",
+          "text": "ATHLETE-FORMULATED HYDRATION • 2:1 SODIUM TO POTASSIUM RATIO • FIVE ESSENTIAL ELECTROLYTES FOR MAXIMUM BENEFITS • THIRD-PARTY TESTED",
+          "complete": true
+        },
+        {
+          "photo": 4,
+          "also_in_photos": [
+            3
+          ],
+          "kind": "other",
+          "text": "We intentionally skip synthetic emulsifiers, gums, anti-caking agents, artificial flavors, and fillers. Because of that, you may notice natural settling or clumping when mixing, that’s normal.",
+          "complete": true
+        },
+        {
+          "photo": 3,
+          "also_in_photos": [
+            4
+          ],
+          "kind": "other",
+          "text": "Just Ingredients products are made without genetically modified organisms (GMOs) or ingredients derived from GMOs.",
+          "complete": true
+        },
+        {
+          "photo": 3,
+          "also_in_photos": [
+            4
+          ],
+          "kind": "other",
+          "text": "These products are produced in GMP compliant and NSF certified facilities.",
+          "complete": true
+        }
+      ]
+    },
+    "ji-vanilla-bean-large": {
+      "panels": [
+        {
+          "photo": 4,
+          "also_in_photos": [
+            6
+          ],
+          "title": "Nutrition Facts",
+          "serving_size": "Serving size 1 Scoop (33.2g)",
+          "servings": "Servings Per Container: 25",
+          "header": {
+            "amount": "Amount per serving",
+            "dv": "% Daily Value"
+          },
+          "complete": false,
+          "rows": [
+            {
+              "name": "Calories",
+              "amount": "140",
+              "dv": "",
+              "indent": 0
+            },
+            {
+              "name": "Total Fat",
+              "amount": "6g",
+              "dv": "7%",
+              "indent": 0
+            },
+            {
+              "name": "Saturated Fat",
+              "amount": "4.5g",
+              "dv": "23%",
+              "indent": 1
+            },
+            {
+              "name": "Trans Fat",
+              "amount": "0g",
+              "dv": "",
+              "indent": 1
+            },
+            {
+              "name": "Cholesterol",
+              "amount": "40mg",
+              "dv": "13%",
+              "indent": 0
+            },
+            {
+              "name": "Sodium",
+              "amount": "120mg",
+              "dv": "5%",
+              "indent": 0
+            },
+            {
+              "name": "Total Carbohydrate",
+              "amount": "4g",
+              "dv": "2%",
+              "indent": 0
+            },
+            {
+              "name": "Dietary Fiber",
+              "amount": "0g",
+              "dv": "0%",
+              "indent": 1
+            },
+            {
+              "name": "Total Sugars",
+              "amount": "1g",
+              "dv": "",
+              "indent": 1
+            },
+            {
+              "name": "Includes Added Sugars",
+              "amount": "0g",
+              "dv": "0%",
+              "indent": 2,
+              "printed": "Includes 0g Added Sugars"
+            },
+            {
+              "name": "Protein",
+              "amount": "22g",
+              "dv": "38%",
+              "indent": 0
+            },
+            {
+              "name": "Vitamin D",
+              "amount": "0mcg",
+              "dv": "0%",
+              "indent": 0
+            },
+            {
+              "name": "Calcium",
+              "amount": "80mg",
+              "dv": "6%",
+              "indent": 0
+            },
+            {
+              "name": "Iron",
+              "amount": "0mg",
+              "dv": "0%",
+              "indent": 0
+            },
+            {
+              "name": "Potassium",
+              "amount": "140mg",
+              "dv": null,
+              "indent": 0
+            }
+          ],
+          "footnotes": []
+        }
+      ],
+      "ingredients": {
+        "photo": 5,
+        "also_in_photos": [
+          6
+        ],
+        "heading": "INGREDIENTS",
+        "text": "100% Grass-Fed Non-Denatured Whey Protein, Organic Coconut Milk*, Organic Pea Protein, Grass-Fed Collagen, Organic Vanilla Extract Powder*, Organic Cinnamon, Organic Chia Seed Protein, Sea Salt, Organic Stevia Leaf Extract, Vanilla Bean, Organic Monk Fruit Extract"
+      },
+      "statements": [
+        {
+          "photo": 5,
+          "also_in_photos": [
+            6
+          ],
+          "kind": "allergen",
+          "text": "CONTAINS COCONUT & DAIRY",
+          "complete": true
+        },
+        {
+          "photo": 5,
+          "also_in_photos": [
+            6
+          ],
+          "kind": "other",
+          "text": "*With Tapioca Starch",
+          "complete": true
+        },
+        {
+          "photo": 1,
+          "also_in_photos": [
+            2,
+            3
+          ],
+          "kind": "other",
+          "text": "No Artificial or Natural Flavors | 22g 22 Grams of Protein | Keto and Macro Friendly | Made with Real Food",
+          "items": [
+            "No Artificial or Natural Flavors",
+            "22 Grams of Protein",
+            "Keto and Macro Friendly",
+            "Made with Real Food"
+          ],
+          "complete": true
+        },
+        {
+          "photo": 1,
+          "also_in_photos": [
+            2,
+            3
+          ],
+          "kind": "other",
+          "text": "NSF CERTIFIED",
+          "complete": true
+        },
+        {
+          "photo": 5,
+          "also_in_photos": [
+            6
+          ],
+          "kind": "other",
+          "text": "EGG FREE | SOY FREE | NON GMO",
+          "items": [
+            "EGG FREE",
+            "SOY FREE",
+            "NON GMO"
+          ],
+          "complete": false
+        },
+        {
+          "photo": 5,
+          "also_in_photos": [
+            6
+          ],
+          "kind": "other",
+          "text": "MADE WITH REAL INGREDIENTS • NO NATURAL FLAVORS • FLAVORED WITH REAL FOOD • NO ARTIFICIAL FLAVORS OR SWEETENERS • NO GUMS, FILLERS, OR SYNTHETIC EMULSIFIERS",
+          "complete": true
+        },
+        {
+          "photo": 5,
+          "also_in_photos": [
+            4,
+            6
+          ],
+          "kind": "other",
+          "text": "OPTIMALLY FORMULATED • PLANT AND ANIMAL BASED – 4 SOURCES OF PROTEIN FOR INCREASED ABSORPTION • 100% GRASS-FED NON-DENATURED WHEY FROM NEW ZEALAND & EUROPE • CONTAINS NUTRIENTS LIKE OMEGA 3S, TRYPTOPHAN, AND BCAAS",
+          "complete": true
+        },
+        {
+          "photo": 4,
+          "also_in_photos": [
+            5,
+            6
+          ],
+          "kind": "other",
+          "text": "A GOOD FIT FOR ALL • KETO FRIENDLY • MACRO FRIENDLY • GREAT FOR KIDS AND TEENS • CAN BE USED IN DRINKS, SMOOTHIES, BAKED GOODS, SAVORY DISHES, AND MORE",
+          "complete": true
+        }
       ]
     }
   }

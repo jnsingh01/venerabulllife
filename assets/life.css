@@ -807,6 +807,8 @@ html.enhanced [data-page="shop"] .search-t, html.enhanced [data-page="home"] .se
 /* a bundle's price is for every package in it: said beside the price */
 .buy .buy-unit { font-size: 15px; color: var(--ink); margin: 8px 0 0; }
 .buy .when { font-size: 13.5px; color: var(--ink-3); margin: 6px 0 18px; }
+/* a bag that comes in another size elsewhere: the difference, said where the shopper chooses it, just above Buy */
+.buy-size { font-size: 14px; line-height: 1.5; color: var(--ink-2); margin: 0 0 16px; text-wrap: pretty; }
 .buy .btn { width: 100%; }
 .buy .how { font-size: 14px; color: var(--ink-2); margin: 14px 0 0; }
 .buy .how a { color: var(--ink); text-underline-offset: 3px; }
@@ -1383,7 +1385,11 @@ html.enhanced .stage img { cursor: zoom-in; }
   /* a sold-out page's two-pack comes first under the gallery, 22 px under it, with its own rule (from 360 to 559 px the
      gallery's closing hairline sets it apart instead: see there) */
   .buy > .alt { margin-top: 22px; }
-  .when-two { display: inline; }
+  /* the size note comes first under the gallery, 22 px under it, then Buy */
+  .buy > .buy-size { margin: 22px 0 0; }
+  /* on its own line, so the status takes the two lines the first screen is measured for (with one, the gallery's note
+     began on Safari's glass edge) */
+  .when-two { display: block; }
   .info > .summary { order: 7; margin-top: 26px; }
   .gal .stage-w, .gal-note { grid-column: auto; grid-row: auto; }
   /* the arrows and Full size leave the picture for a row under it; only the
