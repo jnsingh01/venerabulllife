@@ -34,6 +34,13 @@
      product shares its brand and name (twin, below) */
   function named(p) { return fullName(p) + (twin(p) ? ', ' + p.flavor : ''); }
   function items(n) { return n + (n === 1 ? ' product' : ' products'); }
+  /* A product whose listing was sold out when last checked (`stock.out`) keeps
+     its page, its place in the range and its item number for the restock, but
+     no page shows its price or a way to buy it: each place it appears says it
+     was sold out, and when that was checked. */
+  function out(p) { return !!(p.stock && p.stock.out); }
+  /* a list as it is shown: in its own order, with any sold-out product after the rest */
+  function shelf(list) { return list.filter(function (p) { return !out(p); }).concat(list.filter(out)); }
   /* the date a product's listing, and so its price, was checked */
   function checkedOf(p, L) { L = L || g.LIFE || {}; return (p.ebay && p.ebay.checkedText) || L.checkedText || ''; }
   /* the date a listing's terms (condition, shipping, location, returns) were seen,
@@ -47,19 +54,49 @@
   /* A brand whose listings were checked on more than one day is named with each
      product's flavor ("Equip Chocolate’s on 7 Nov 2026"), so no date is read as
      the whole brand's. */
-  function checkedAll(L, of) {
+  function checkedAll(L, of, keep) {
     var by = {}, order = [], days = {};
     of = of || checkedOf;
-    L.products.forEach(function (p) { (days[p.brand] = days[p.brand] || {})[of(p, L)] = 1; });
-    L.products.forEach(function (p) {
-      var d = of(p, L), who = possessive(Object.keys(days[p.brand]).length > 1 ? p.brand + ' ' + p.flavor : p.brand);
+    /* a sold-out product shows no price or terms, so it names no date here */
+    var list = L.products.filter(function (p) { return !out(p) && (!keep || keep(p)); });
+    list.forEach(function (p) { (days[p.brand] = days[p.brand] || {})[of(p, L)] = 1; });
+    /* a brand is named with each product's flavor when its products here carry more than one date, or when one of
+       its products isn't in this list (sold out, or its terms only partly recorded), so a date never reads as the
+       whole brand's */
+    function whole(b) { return L.products.filter(function (x) { return x.brand === b; }).every(function (x) { return list.indexOf(x) >= 0; }); }
+    list.forEach(function (p) {
+      var d = of(p, L), who = possessive(Object.keys(days[p.brand]).length > 1 || !whole(p.brand) ? p.brand + ' ' + p.flavor : p.brand);
       if (d === L.checkedText) { return; }
       if (!by[d]) { by[d] = []; order.push(d); }
       if (by[d].indexOf(who) < 0) { by[d].push(who); }
     });
     return day(L.checkedText) + (order.length ? ' (' + order.map(function (d) { return andList(by[d]) + ' on ' + day(d); }).join('; ') + ')' : '');
   }
-  function termsAll(L) { return checkedAll(L, termsOf); }
+  /* The listing terms a product's own records verify: all four for most listings (condition and shipping seen on
+     the listing, item location and returns the store's standing policies); a relist whose records name only some
+     (`ebay.terms`: Equip Chocolate's and Ascent Chocolate's name only free shipping) shows only those, and says the
+     rest are shown on the listing. */
+  var TERMS = [['condition', 'Condition'], ['shipping', 'Shipping'], ['from', 'Item location'], ['returns', 'Returns']];
+  function termKeys(p) { return (p && p.ebay && p.ebay.terms) || TERMS.map(function (t) { return t[0]; }); }
+  function partTerms(p) { return !!(p.ebay && p.ebay.terms); }
+  function unseen(p) { return TERMS.filter(function (t) { return termKeys(p).indexOf(t[0]) < 0; }).map(function (t) { return t[1].toLowerCase(); }); }
+  /* the shown listings whose terms are only partly recorded */
+  function partListed(L) { return L.products.filter(function (p) { return !out(p) && partTerms(p); }); }
+  /* every listing whose terms are all recorded, with each one's date; then which are not covered */
+  function termsAll(L) {
+    var part = partListed(L);
+    return checkedAll(L, termsOf, function (p) { return !partTerms(p); }) +
+      (part.length ? ', all but ' + andList(part.map(function (p) { return possessive(p.brand + ' ' + p.flavor); })) : '');
+  }
+  /* what a partly recorded listing's records show, said where the shared terms are */
+  function partNote(L) {
+    var lst = L.listing;
+    var say = { condition: lst.condition.toLowerCase() + ' condition', shipping: lst.shipping.toLowerCase(), from: 'item located in ' + day(lst.from), returns: lst.returns.replace(/\.$/, '').toLowerCase() };
+    return partListed(L).map(function (p) {
+      return possessive(p.brand + ' ' + p.flavor) + ' relisted listing showed ' + andList(termKeys(p).map(function (k) { return say[k]; })) + ' when it was published on ' + day(termsOf(p, L)) +
+        '. Its ' + andList(unseen(p)) + ' are shown on the listing.';
+    }).join(' ');
+  }
   function andList(b) { return b.length > 1 ? b.slice(0, -1).join(', ') + ' and ' + b[b.length - 1] : b.join(''); }
   /* A printed date known only for the bag in the photos (a bag bought
      through its current listing may carry another, which isn't recorded) says
@@ -68,6 +105,8 @@
   var PHOTO_DATE = 'on the bag in the photos';
   var PHOTO_DATE_NOTE = 'That date is the one printed on the bag in the photos. A bag bought through the current listing may carry a different date; ' +
     'to confirm it, ask through “Contact seller” on the listing.';
+  /* the same note on a sold-out product's page, which offers no way to buy */
+  var PHOTO_DATE_OUT = 'That date is the one printed on the bag in the photos.';
   function whose(p) { return p.date.photographed ? ' ' + PHOTO_DATE : ''; }
   /* A date no photo shows (`date.none`: Equip's strawberry pouches print theirs
      where these photos don't reach) is never set out as printed: the page says
@@ -84,6 +123,18 @@
   /* what a packshot shows: "the bag", or for a bundle, "both pouches" */
   function thing(p) { return p.bundle ? (p.bundle.n === 2 ? 'both ' : 'all ' + p.bundle.n + ' ') + p.bundle.units : 'the bag'; }
   function cap1(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  /* where a sold-out product's page points instead of Buy: the shop's products
+     of its flavor (itself among them, last), or else the whole shop */
+  function instead(p, root) {
+    var L = g.LIFE || { products: [] }, f = p.facet.flavor && p.facet.flavor[0];
+    var more = f && L.products.some(function (x) { return x !== p && !out(x) && (x.facet.flavor || []).indexOf(f) >= 0; });
+    return more ? { href: shopHref(root, 'flavor', f), text: 'See all ' + f.toLowerCase() } : { href: shopHref(root), text: 'See the whole shop' };
+  }
+  /* on a sold-out page: the brand's other products for sale, if it has any here */
+  function sameBrand(p) {
+    var L = g.LIFE || { products: [] };
+    return L.products.some(function (x) { return x !== p && x.brand === p.brand && !out(x); });
+  }
   /* "6 Nov 2026" in one piece in running text (a no-break space between its parts) */
   function day(d) { return String(d || '').replace(/ /g, '\u00a0'); }
   /* escaped text whose figures keep their units ("9.1 oz", "20 g") and whose "&" keeps its next word */
@@ -357,10 +408,12 @@
           ? '<span class="nw">' + esc(count(p)) + '</span>, <span class="nw">' + esc(p.bundle.each) + '</span> each'
           : '<span class="nw">' + esc(p.size.text) + '</span>') + '</p>' +
         '<p class="card-facts">' + p.protein + '&nbsp;g protein · ' + esc(servingsText(p).replace('About', 'about')).replace(/ /g, '&nbsp;') + '&nbsp;servings' + (p.bundle ? '&nbsp;in&nbsp;all' : '') + '</p>' +
-        '<p class="card-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
-        '<p class="card-when">On eBay, checked <span class="nw">' + esc(checkedOf(p)) + '</span></p>' +
+        (out(p) ? '<p class="card-price"><span class="price is-out">Sold out</span></p>' +
+            '<p class="card-when">On eBay, checked <span class="nw">' + esc(p.stock.checkedText) + '</span></p>'
+          : '<p class="card-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
+            '<p class="card-when">On eBay, checked <span class="nw">' + esc(checkedOf(p)) + '</span></p>') +
         '<div class="card-foot"><span class="card-go" aria-hidden="true">View ' + ICON.arrow + '</span>' +
-          ext(p.ebay.url, 'Buy on eBay', 'card-buy', 'opens the eBay listing for the ' + named(p) + ' in a new tab') + '</div>' +
+          (out(p) ? '' : ext(p.ebay.url, 'Buy on eBay', 'card-buy', 'opens the eBay listing for the ' + named(p) + ' in a new tab')) + '</div>' +
       '</div></article>';
   }
   function cards(list, root) { return list.map(function (p) { return card(p, root); }).join(''); }
@@ -381,25 +434,29 @@
     return '<caption class="sr">Every product here, compared on its label figures, with prices as listed on eBay and checked ' + esc(checkedAll(L)) + '</caption>' +
       '<thead role="rowgroup"><tr role="row">' + ['Product', 'Size', 'Servings', 'Protein', 'Listed price', 'Per serving', 'Date on the bag'].map(function (h) {
         return '<th scope="col" role="columnheader">' + h + '</th>'; }).join('') + '</tr></thead><tbody role="rowgroup">' +
-      L.products.map(function (p) {
+      shelf(L.products).map(function (p) {
         function td(l, v, num) { return '<td' + (num ? ' class="num"' : '') + ' role="cell" data-l="' + l + '">' + v + '</td>'; }
         return '<tr role="row"><th scope="row" role="rowheader"><a href="' + esc(productHref(p, root)) + '">' + esc(fullName(p)).replace(/ \+ /g, '&nbsp;+&nbsp;').replace(/(\S)-(\S)/g, '$1\u2011$2') + '</a><small>' + glue(p.flavor) + '</small></th>' +
           td('Size', p.bundle ? esc(count(p)) + ' <small>' + glue(p.bundle.each) + '&nbsp;each</small>' : esc(p.size.text).replace(/\(([^)]*)\)/, '<span class="nw">($1)</span>')) +
           td('Servings', esc(servingsText(p)) + (p.bundle ? '&nbsp;in&nbsp;all <small>' + p.bundle.servings + '&nbsp;per&nbsp;' + esc(p.bundle.unit) + '</small>' : ''), true) + td('Protein', p.protein + ' g', true) +
-          td('Listed price', money(p.price), true) + td('Per serving', esc(perServing(p)), true) +
+          (out(p) ? td('Listed price', 'Sold out <small>checked <span class="nw">' + esc(p.stock.checkedText) + '</span></small>', true) +
+              td('Per serving', '<span aria-hidden="true">–</span><span class="sr">none while sold out</span>', true)
+            : td('Listed price', money(p.price), true) + td('Per serving', esc(perServing(p)), true)) +
           td('Date on the bag', p.date.none ? 'Not shown in the photos' : esc(p.date.kind + ' ' + day(p.date.text) + (p.date.photographed ? (', ' + PHOTO_DATE).replace(/ (\S+)$/, '\u00a0$1') : ''))) + '</tr>';
       }).join('') + '</tbody>';
   }
   function cmpNote(L) { return 'Listed prices as checked on eBay on ' + checkedAll(L) + '. eBay shows the current price and availability.'; }
   function howListing(L) {
     return 'As listed when the listings were checked on ' + termsAll(L) + ': ' + L.listing.shipping.toLowerCase() +
-      ', item located in ' + day(L.listing.from) + '. ' + L.listing.returns;
+      ', item located in ' + day(L.listing.from) + '. ' + L.listing.returns + (partListed(L).length ? ' ' + partNote(L) : '');
   }
   /* a term's last two words held together, so it never ends on one word alone */
   function tail(s) { return String(s).replace(/ (\S+)$/, '\u00a0$1'); }
-  function listingDl(L) {
-    return '<dl class="listing"><dt>Condition</dt><dd>' + esc(L.listing.condition) + '</dd><dt>Shipping</dt><dd>' + esc(tail(L.listing.shipping)) + '</dd>' +
-      '<dt>Item location</dt><dd>' + esc(day(L.listing.from)) + '</dd><dt>Returns</dt><dd>' + esc(tail(L.listing.returns)) + '</dd></dl>';
+  /* the listing terms as a list: all four, or for a product, only those its records verify */
+  function listingDl(L, p) {
+    var v = { condition: L.listing.condition, shipping: tail(L.listing.shipping), from: day(L.listing.from), returns: tail(L.listing.returns) };
+    return '<dl class="listing">' + TERMS.filter(function (t) { return termKeys(p).indexOf(t[0]) >= 0; }).map(function (t) {
+      return '<dt>' + t[1] + '</dt><dd>' + esc(v[t[0]]) + '</dd>'; }).join('') + '</dl>';
   }
   function intro(L) {
     var cat = L.categories.filter(function (c) { return counts(L)[c.id]; }).map(function (c) { return c.name.toLowerCase().replace('&', 'and'); });
@@ -601,7 +658,8 @@
       '<ul>' + p.facts.map(function (f) { return '<li><b>' + esc(f[0]) + ':</b> ' + esc(f[1]) + '</li>'; }).join('') +
       (p.date.none ? '<li><b>' + esc(p.date.kind) + ':</b> not shown in these photos</li></ul>'
         : '<li><b>' + esc(p.date.kind) + ':</b> ' + esc(p.date.text) + ' (printed ' + esc(p.date.printed) + esc(whose(p)) + ')</li></ul>') +
-      p.notes.concat(p.date.none ? [dateNote(p)] : p.date.photographed ? [PHOTO_DATE_NOTE] : []).map(function (x) { return '<p class="note">' + esc(x) + '</p>'; }).join('') +
+      p.notes.concat(p.date.none ? [out(p) ? dateNote(p).replace(/ To confirm .*$/, '') : dateNote(p)] : p.date.photographed ? [out(p) ? PHOTO_DATE_OUT : PHOTO_DATE_NOTE] : [])
+        .map(function (x) { return '<p class="note">' + esc(x) + '</p>'; }).join('') +
       (lb
         ? '<p class="acc-more">' + cap1(andList(['the ' + (lb.panels.some(partial) ? '' : 'full ') + esc(lb.panels[0].title.toLowerCase()) + ' panel']
             .concat(lb.ingredients ? ['the ingredients'] : []).concat(notices(p, lb) ? [notices(p, lb)] : []))) +
@@ -613,13 +671,20 @@
       acc.push({ t: 'Ingredients', h: '<p class="acc-lead">As listed on the label, ' + p.ingredients.length + ' in all:</p><ul>' +
         p.ingredients.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' });
     }
-    acc.push({ t: 'Buying, delivery and returns', h:
-      '<p class="acc-lead">As listed on eBay when the listing was checked on ' + esc(termsOf(p, L)) + ':</p>' + listingDl(L) +
-      '<p class="acc-more">You pay on eBay, and the listing is what applies to your purchase, so check it before you buy. ' +
+    /* a sold-out product: no terms to buy by, and nothing that sends a shopper to a listing this page doesn't link */
+    acc.push(out(p) ? { t: 'Buying, delivery and returns', h:
+      '<p class="acc-lead">Its listing was sold out on eBay when checked on ' + esc(p.stock.checkedText) + ', so there is no way to buy it here.</p>' +
+      '<p class="acc-more">Every purchase is made on eBay, and everything we sell is in our eBay store.</p>' } : { t: 'Buying, delivery and returns', h:
+      '<p class="acc-lead">As listed on eBay when the listing was checked on ' + esc(termsOf(p, L)) + ':</p>' + listingDl(L, p) +
+      '<p class="acc-more">' + (partTerms(p) ? 'Its ' + esc(andList(unseen(p))) + ' are shown on the listing. ' : '') + 'You pay on eBay, and the listing is what applies to your purchase, so check it before you buy. ' +
       'Questions about this item can be asked through “Contact seller” on the listing.</p>' });
     acc.push({ t: 'Where these details come from', h:
       '<p>The product facts on this page are transcribed from the package label in the photos; if anything here differs from the label on the package, the label is right. ' +
-      (termsOf(p, L) === checkedOf(p, L)
+      (out(p) ? 'The sold-out status is as its eBay listing showed when checked on ' + esc(p.stock.checkedText) + '. '
+        : partTerms(p) ? (termsOf(p, L) === checkedOf(p, L)
+          ? 'The price and ' + esc(andList(termKeys(p))) + ' are as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + '. '
+          : 'The price is as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + ', and the ' + esc(andList(termKeys(p))) + ' as listed on ' + esc(termsOf(p, L)) + '. ')
+        : termsOf(p, L) === checkedOf(p, L)
         ? 'The price, condition, shipping and returns are as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + '. '
         : 'The price is as listed on eBay when the listing was checked on ' + esc(checkedOf(p, L)) + ', and the condition, shipping and returns as listed on ' + esc(termsOf(p, L)) + '. ') +
       'This page makes no health claims, and nothing on it is medical advice.</p>' });
@@ -646,14 +711,16 @@
      (without scripts the buy box beside the photos says all of it). */
   function closingCard(p, L, root) {
     return '<div class="sbuy js-only" id="stage-buy" hidden data-dated>' +
-      '<p class="sbuy-t">Choose here. Buy on eBay.</p>' +
+      '<p class="sbuy-t">' + (out(p) ? 'Sold out on eBay.' : 'Choose here. Buy on eBay.') + '</p>' +
       '<ol class="sbuy-l">' +
         '<li><span>Sold through our eBay store, ' + STORE_NAME + '.</span></li>' +
-        '<li><span><span class="price">' + money(p.price) + '</span> ' + (p.bundle ? 'for ' + esc(count(p)) + ', ' : '') + 'as listed on eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span>.</span></li>' +
+        (out(p) ? '<li><span>Its listing was sold out when checked on <span class="nw">' + esc(p.stock.checkedText) + '</span>.</span></li>'
+          : '<li><span><span class="price">' + money(p.price) + '</span> ' + (p.bundle ? 'for ' + esc(count(p)) + ', ' : '') + 'as listed on eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span>.</span></li>') +
         '<li><span>Product facts from the package’s own label.</span></li>' +
       '</ol>' +
       '<a class="sbuy-more" href="' + esc(root) + 'help.html">How buying works</a>' +
-      '<p class="sbuy-a">' + ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s', 'opens the eBay listing for the ' + named(p) + ' in a new tab') +
+      '<p class="sbuy-a">' + (out(p) ? '<a class="btn btn-2 btn-s sbuy-go" href="' + esc(instead(p, root).href) + '">' + esc(instead(p, root).text) + '</a>'
+        : ext(p.ebay.url, 'Buy on eBay', 'btn btn-1 btn-s', 'opens the eBay listing for the ' + named(p) + ' in a new tab')) +
         '<a class="btn btn-2 btn-s" href="' + esc(root) + 'help.html">How buying works</a></p>' +
     '</div>';
   }
@@ -661,6 +728,7 @@
      package, its name, the price, its check date and Buy on eBay (shown by the
      script; hidden without it). */
   function buyBar(p, L, root) {
+    if (out(p)) { return ''; }
     return '<aside class="bbar js-only" id="bbar" aria-label="Buy the ' + esc(named(p)) + '" data-dated><div class="bbar-in">' +
       (p.pack ? '<img class="bbar-im" src="' + esc(pack(p, true, root)) + '" alt="" width="480" height="600" loading="lazy" decoding="async">' : '') +
       '<p class="bbar-p"><span class="bbar-n">' + esc(fullName(p) + (p.bundle ? ', ' + count(p) : '')) + '</span><span class="price">' + money(p.price) + '</span><span class="bbar-w">On eBay, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span></span></p>' +
@@ -671,7 +739,7 @@
   function productMain(p, L, root) {
     var sl = slides(p, root), first = sl[0];
     var size = /^(.*) \((.*)\)$/.exec(p.size.text) || [p.size.text, p.size.text, ''];
-    var others = L.products.filter(function (x) { return x.id !== p.id; });
+    var others = shelf(L.products.filter(function (x) { return x.id !== p.id; }));
     var cat = catOf(L, p.category);
     var kv = [
       p.bundle ? ['Size', esc(count(p)) + ' <small><span class="nw">' + esc(p.bundle.each) + ' each;</span> <span class="nw">' + esc(p.bundle.total) + ' together</span></small>', 'kv-wide']
@@ -730,19 +798,24 @@
              at its hyphen ("grass-fed", "7-serving": a non-breaking hyphen holds it, so the line can still wrap well) */
           '<p class="summary">' + glue(p.summary).replace(/&nbsp;oz (bag|pouch)/g, '&nbsp;oz&nbsp;$1').replace(/(\S)-(\S)/g, '$1\u2011$2') + '</p>' +
           '<div class="buy" data-dated>' +
-            '<p class="buy-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
-            (p.bundle ? '<p class="buy-unit">The price is for ' + esc(thing(p)) + '.</p>' : '') +
-            '<p class="when">Listed on eBay, checked ' + esc(checkedOf(p, L)) + '. eBay shows the current price and availability.</p>' +
-            '<a class="btn btn-1" id="buy" href="' + esc(p.ebay.url) + '" target="_blank" rel="noopener">Buy on eBay ' + ICON.ne + '<span class="sr"> (opens the eBay listing in a new tab)</span></a>' +
-            '<p class="how">You’ll complete your purchase on eBay. <a href="' + esc(root) + 'help.html">How buying works</a></p>' +
+            (out(p) ? '<p class="buy-price"><span class="price is-out">Sold out</span></p>' +
+                '<p class="when">On eBay, checked ' + esc(p.stock.checkedText) + '.</p>' +
+                '<a class="btn btn-2" id="instead" href="' + esc(instead(p, root).href) + '">' + esc(instead(p, root).text) + '</a>' +
+                (sameBrand(p) ? '<p class="how">Its other flavors and bundles have their own listings. <a class="nw" href="' + esc(shopHref(root, 'q', p.brand)) + '">See ' + esc(p.brand) + ' in the shop</a></p>'
+                  : '<p class="how">Every purchase is completed on eBay. <a class="nw" href="' + esc(root) + 'help.html">How buying works</a></p>')
+              : '<p class="buy-price"><span class="price">' + money(p.price) + '</span> <span class="pps">' + esc(perServing(p)) + ' a serving</span></p>' +
+                (p.bundle ? '<p class="buy-unit">The price is for ' + esc(thing(p)) + '.</p>' : '') +
+                '<p class="when">Listed on eBay, checked ' + esc(checkedOf(p, L)) + '. eBay shows the current price and availability.</p>' +
+                '<a class="btn btn-1" id="buy" href="' + esc(p.ebay.url) + '" target="_blank" rel="noopener">Buy on eBay ' + ICON.ne + '<span class="sr"> (opens the eBay listing in a new tab)</span></a>' +
+                '<p class="how">You’ll complete your purchase on eBay. <a href="' + esc(root) + 'help.html">How buying works</a></p>') +
             '<p class="buy-store">' + esc(NOTICE) + ' ' + storeLink('Visit the store') + '</p>' +
           '</div>' +
           '<h2 class="h-s">Key info</h2>' +
           /* a wide cell (the bundle's size) takes its row; the per-serving cell takes its row only when the cells before
              it leave it alone in one */
           '<dl class="kv">' + kv.map(function (x) { return '<div' + (x[2] ? ' class="' + x[2] + '"' : '') + '><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('') +
-            '<div' + (kv.filter(function (x) { return !x[2]; }).length % 2 ? '' : ' class="kv-full"') + ' data-dated><dt>Per serving</dt><dd>' + esc(perServing(p).replace('about ', 'About ')) + ' <small>listed price' + (p.bundle ? ' for ' + esc(count(p)).replace(' ', '&nbsp;') : '') + ' ÷ ' +
-              esc(servingsText(p).toLowerCase()) + '&nbsp;servings, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span></small></dd></div>' +
+            (out(p) ? '' : '<div' + (kv.filter(function (x) { return !x[2]; }).length % 2 ? '' : ' class="kv-full"') + ' data-dated><dt>Per serving</dt><dd>' + esc(perServing(p).replace('about ', 'About ')) + ' <small>listed price' + (p.bundle ? ' for ' + esc(count(p)).replace(' ', '&nbsp;') : '') + ' ÷ ' +
+              esc(servingsText(p).toLowerCase()) + '&nbsp;servings, checked <span class="nw">' + esc(checkedOf(p, L)) + '</span></small></dd></div>') +
           '</dl>' +
           (p.label.length ? '<h2 class="h-s">The label says</h2><ul class="tags">' + p.label.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
           accordion(p, L) +
@@ -873,6 +946,7 @@
 
   function pageTitle(p) { return fullName(p) + ', ' + p.flavor + ' — Venerabull Life'; }
   function pageDescription(p, L) {
+    if (out(p)) { return p.summary + ' Sold out on eBay when checked ' + p.stock.checkedText + '.'; }
     return p.summary + ' ' + money(p.price) + ' on eBay when checked ' + checkedOf(p, L) + '; bought through the eBay listing.';
   }
 
@@ -886,6 +960,7 @@
     card: card, cards: cards, row: row, priceNote: priceNote, cmpTable: cmpTable, cmpNote: cmpNote, howListing: howListing, listingDl: listingDl,
     intro: intro, homeChips: homeChips, homeCats: homeCats, productMain: productMain, pageTitle: pageTitle, pageDescription: pageDescription,
     pack: pack, slides: slides, galNote: galNote, factsPanel: factsPanel, labelSection: labelSection, catTiles: catTiles,
+    out: out, shelf: shelf, partNote: partNote,
     fold: fold, words: words, searchIndex: searchIndex, parseQuery: parseQuery, searchHit: searchHit, freeClaims: freeClaims
   };
   g.LIFE_RENDER = R;

@@ -20,7 +20,13 @@
    `checked` is the date the listings were checked. A product whose listing
    was replaced since (sold out, then relisted under a new item number) carries
    its own `ebay.checked`/`ebay.checkedText`: the date its new listing was
-   checked, and `ebay.replaced`, the item number it replaced. */
+   checked, and `ebay.replaced`, the item number it replaced. A product whose
+   listing showed none left when last checked carries `stock.out` with that
+   check's date: it stays in the shop, said to be sold out, with no price and no
+   way to buy until it is restocked under the same item number. A listing whose
+   own records verify only some of its terms (`ebay.terms`, from condition,
+   shipping, from and returns) shows only those; the rest are left to the
+   listing. */
 window.LIFE = {
   checked: '2026-10-30',
   checkedText: '30 Oct 2026',
@@ -68,7 +74,10 @@ window.LIFE = {
          bag in the photos; a bag bought through the current listing may carry
          another, which isn't recorded, so every page that shows the date says
          whose it is */
-      date: { kind: 'Best by', text: 'July 2028', printed: '07/2028', sort: '2028-07', photographed: true },
+      /* its 7 Nov relist kept the original photos, so this date is known only
+         for the photographed bag: no sort key (it never ranks by a date its
+         listing's bag may not carry) */
+      date: { kind: 'Best by', text: 'July 2028', printed: '07/2028', sort: '', photographed: true },
       facet: { flavor: ['Chocolate'], source: ['Beef'], label: ['Dairy free'] },
       price: 29.99,
       /* 407326667373 sold out and ended on 30 Oct 2026, and was relisted as
@@ -76,7 +85,12 @@ window.LIFE = {
          and this relist of the same single-pouch product was verified on
          7 Nov 2026 at the same price */
       ebay: { item: '407346056487', url: 'https://www.ebay.com/itm/407346056487', replaced: '407327910990',
-              checked: '2026-11-07', checkedText: '7 Nov 2026' },
+              checked: '2026-11-07', checkedText: '7 Nov 2026', terms: ['shipping'] },
+      /* sold out: the listing showed none available when checked on 8 Nov 2026.
+         Its item number stays for the restock; while `stock.out`
+         is set, no page shows a price for it or a way to buy it, and every place
+         it appears says it was sold out when checked on that date */
+      stock: { out: true, checked: '2026-11-08', checkedText: '8 Nov 2026' },
       /* the label's "NO WHEY, DAIRY, SOY, ARTIFICIAL SWEETENERS, GLUTEN, OR SEED OILS." (photo 5) */
       free: ['whey', 'dairy', 'soy', 'artificial sweeteners', 'gluten', 'seed oils'],
       /* the packshot: this package lifted from photo 2 onto the plain ground, at
@@ -238,10 +252,19 @@ window.LIFE = {
       ingredients: null,
       label: ['No added sugars', 'No artificial flavors or sweeteners'],
       notes: ['Contains milk and soy.'],
-      date: { kind: 'Best by', text: 'March 6, 2027', printed: '03/06/2027', sort: '2027-03-06' },
+      /* printed "BEST BY: 03/06/2027" on the photographed bag (photo 2). Its relist
+         kept these photos, so the date is known only for that bag: the pages say
+         whose it is, and it has no sort key */
+      date: { kind: 'Best by', text: 'March 6, 2027', printed: '03/06/2027', sort: '', photographed: true },
       facet: { flavor: ['Chocolate'], source: ['Whey'], label: ['No added sugars'] },
       price: 39.99,
-      ebay: { item: '407326666527', url: 'https://www.ebay.com/itm/407326666527' },
+      /* 407326666527 ended; this exact relist of the same 2 lb, 27-serving bag was
+         published on 5 Nov 2026 at $39.99 with free shipping, its photos kept. Its
+         price checked again on 6 Nov 2026 (the seller's list of that day). terms:
+         its records name only its free shipping, so only that is shown; its
+         condition, location and returns are left to the listing */
+      ebay: { item: '407341511190', url: 'https://www.ebay.com/itm/407341511190', replaced: '407326666527',
+              checked: '2026-11-06', checkedText: '6 Nov 2026', termsChecked: '2026-11-05', termsCheckedText: '5 Nov 2026', terms: ['shipping'] },
       /* the back (photo 2): its marks NO ADDED SUGARS and 0 ARTIFICIAL FLAVORS AND
          SWEETENERS (the label list above), and its line "GLUTEN FREE, rBST/rBGH FREE*" */
       free: ['added sugars', 'artificial flavors', 'artificial sweeteners', 'gluten', 'rbst', 'rbgh'],

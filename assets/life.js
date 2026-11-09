@@ -500,7 +500,8 @@
         protein: function (a, b) { return b.protein - a.protein; },
         date: function (a, b) { return a.date.sort < b.date.sort ? 1 : (a.date.sort > b.date.sort ? -1 : 0); }
       }[S.sort];
-      return by ? list.slice().sort(by) : list.slice();
+      /* whatever the order, a sold-out product comes after the rest */
+      return R.shelf(by ? list.slice().sort(by) : list.slice());
     }
     function active() { return L.facets.reduce(function (n, g) { return n + S.f[g.id].length; }, 0) + (S.q ? 1 : 0); }
 
