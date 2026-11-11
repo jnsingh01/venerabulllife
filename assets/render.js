@@ -276,7 +276,8 @@
     'dim-heart': [1024, 1536, 533, 800], 'dim-soul': [1024, 1536, 533, 800], 'cat-protein': [1200, 1200, 800, 800],
     'cat-vitamins': [1254, 1254, 800, 800], 'cat-skin': [1254, 1254, 800, 800], 'cat-bath': [1200, 1200, 800, 800],
     'spa-hero': [1672, 941, 800, 450], 'spa-detail': [1672, 941, 800, 450], 'rest-hero': [1774, 887, 800, 400],
-    'rest-detail': [1672, 941, 800, 450], 'exp-hero': [1672, 941, 800, 450], 'exp-detail': [1200, 675, 800, 450]
+    'rest-detail': [1672, 941, 800, 450], 'exp-hero': [1672, 941, 800, 450], 'exp-detail': [1200, 675, 800, 450],
+    'lon-hero': [1672, 941, 800, 450], 'lon-detail': [1672, 941, 800, 450]
   };
   /* <img> for one of those pictures. o: alt, sizes, lazy, pos (object-position), cls, high */
   function pic(name, root, o) {
@@ -294,6 +295,7 @@
     { id: 'spa', href: 'spa.html', name: 'Spa' },
     { id: 'rest', href: 'rest.html', name: 'Rest' },
     { id: 'experiences', href: 'experiences.html', name: 'Experiences' },
+    { id: 'longevity', href: 'longevity.html', name: 'Longevity' },
     { id: 'help', href: 'help.html', name: 'How buying works' }
   ];
   /* the directions: shown with real presence, never offered */
@@ -306,7 +308,10 @@
       keys: 'mattresses natural materials bedding linen cotton wool sleep bed night' },
     { id: 'experiences', href: 'experiences.html', name: 'Experiences', short: 'Experiences', status: 'Not yet available', img: 'exp-hero', pos: '50% 50%',
       line: 'Retreats, classes and gatherings, much of it outdoors.',
-      keys: 'retreats classes movement breath craft gatherings food company outdoors walks woods open air' }
+      keys: 'retreats classes movement breath craft gatherings food company outdoors walks woods open air' },
+    { id: 'longevity', href: 'longevity.html', name: 'Longevity', short: 'Longevity', status: 'Not yet available', img: 'lon-hero', pos: '60% 30%',
+      line: 'Biosciences for everyday life: measurement, heat, cold and light, and supplements.',
+      keys: 'longevity interventions intervention studies study research biosciences bioscience science measurement measurements measure sleep heart rate body composition devices heat cold light sauna cold water immersion home supplements capsules labels' }
   ];
   /* the help page, as search finds it (`keys`: words its page uses) */
   var HELP = { href: 'help.html', name: 'How buying works', line: 'Every product is bought through its own eBay listing.',
@@ -363,7 +368,7 @@
       '    <p class="foot-store">' + esc(NOTICE) + ' ' + storeLink('Visit the store') + '</p>\n' +
       '    <div class="foot-fine">\n' +
       '      <p>Purchases are completed on eBay, in eBay’s own checkout. Product facts come from each package’s label, and the label on the package is authoritative. Nothing on this site is medical advice.</p>\n' +
-      '      <p>The images of the spa, Rest and Experiences are illustrations of directions that aren’t open yet. Category and lifestyle images are illustrations too; product photos are of the actual packages.</p>\n' +
+      '      <p>The images of the spa, Rest, Experiences and Longevity are illustrations of directions that aren’t open yet. Category and lifestyle images are illustrations too; product photos are of the actual packages.</p>\n' +
       '      <p>© 2026 Venerabull</p>\n    </div>\n  </div>\n</footer>\n';
   }
 

@@ -50,7 +50,7 @@
   function counts() { return R.counts(L); }
   function catOf(id) { return R.catOf(L, id); }
   var items = R.items;
-  var CUR = { home: 'home', shop: 'shop', product: 'product', resolve: 'resolve', help: 'help', spa: 'spa', rest: 'rest', experiences: 'experiences' }[PAGE] || '';
+  var CUR = { home: 'home', shop: 'shop', product: 'product', resolve: 'resolve', help: 'help', spa: 'spa', rest: 'rest', experiences: 'experiences', longevity: 'longevity' }[PAGE] || '';
 
   /* ── the loading bar: on while another page is really loading ─────────── */
   var bar = $('#progress');

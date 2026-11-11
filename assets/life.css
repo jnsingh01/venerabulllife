@@ -540,7 +540,8 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; a
   position: relative; display: block; aspect-ratio: 16 / 10; border-radius: var(--r); overflow: hidden; color: #fff; text-decoration: none;
   isolation: isolate; background: linear-gradient(140deg, #CDBDA5, #8F7C66);
 }
-.going-p:first-child { grid-column: 1 / -1; aspect-ratio: 21 / 9; }
+/* four directions: the first and the last wide, Rest and Experiences beside each other between them */
+.going-p:first-child, .going-p:nth-child(4) { grid-column: 1 / -1; aspect-ratio: 21 / 9; }
 .going-m img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; transition: transform 700ms var(--ease); }
 .going-p::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 64%; z-index: -1; pointer-events: none;
@@ -551,7 +552,7 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; a
 .going-t { font-size: clamp(1.75rem, 1.1rem + 1.8vw, 2.9rem); font-weight: 300; letter-spacing: -.02em; line-height: 1.1; }
 .going-l { font-size: 16px; line-height: 1.45; max-width: 44ch; text-wrap: pretty; }
 /* side by side, each line keeps two lines' room, so the two titles share one line */
-@media (min-width: 900px) { .going-p:not(:first-child) .going-l { min-height: 2.9em; } }
+@media (min-width: 900px) { .going-p:not(:first-child):not(:nth-child(4)) .going-l { min-height: 2.9em; } }
 .going-go { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 500; transition: gap var(--t) var(--ease); }
 .cap {
   position: absolute; right: 14px; top: 14px; z-index: 1; margin: 0; padding: 5px 10px; border-radius: 999px;
@@ -1224,8 +1225,14 @@ html.enhanced .stage img { cursor: zoom-in; }
 .dlink-l { font-size: 15px; color: var(--ink-2); text-wrap: pretty; }
 .dlink-go { display: inline-flex; align-items: center; gap: 6px; font-size: 14.5px; margin-top: auto; transition: gap var(--t) var(--ease); }
 @media (hover: hover) { .dlink:hover { transform: translateY(-2px); box-shadow: var(--shadow-up); } .dlink:hover .dlink-go { gap: 10px; } }
+/* three other directions side by side from 900 px, each its picture over its words */
+@media (min-width: 900px) {
+  .dlinks { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dlink { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .dlink-m { min-height: 0; aspect-ratio: 16 / 10; }
+}
 
-/* moods: the spa dark, warm and still; Rest light; Experiences open-air and warm */
+/* moods: the spa dark, warm and still; Rest light; Experiences open-air and warm; Longevity clear and cool */
 /* The page's own ground stays paper: Mobile Safari tints its status bar from
    it (theme-color aside), and a dark ground read as a black strip above the
    notice and the header. The dark belongs to the direction itself. */
@@ -1247,6 +1254,17 @@ html.enhanced .stage img { cursor: zoom-in; }
 .mood-rest .dir-shop { background: var(--cream); }
 .mood-exp .dir-note { background: var(--heart); }
 .mood-exp .dir-shop { background: var(--body); }
+/* Longevity's two terms, set like the items in the direction */
+.dir-terms { padding-top: clamp(56px, 7vw, 104px); }
+.dir-terms dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; margin: 28px 0 0; }
+.dir-terms dl > div { border-top: 1px solid var(--line); padding: 22px 0 8px; }
+.dir-terms dt { font-size: 22px; font-weight: 400; letter-spacing: -.012em; margin: 0 0 6px; }
+.dir-terms dd { margin: 0; color: var(--ink-2); font-size: 15.5px; max-width: 56ch; text-wrap: pretty; }
+.mood-lon .dhero { --cap: 1672px; background: linear-gradient(140deg, #C9D0CC, #7C8884); }
+.mood-lon .dir-items ol { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mood-lon .dir-detail img { background: linear-gradient(140deg, #E4E8E5, #C9D0CC); }
+.mood-lon .dir-note { background: var(--mind); }
+.mood-lon .dir-shop { background: var(--cream); }
 
 /* ── help ───────────────────────────────────────────────────────────────── */
 .help-h { max-width: 860px; }
@@ -1347,7 +1365,7 @@ html.enhanced .stage img { cursor: zoom-in; }
   .catlist-n { font-size: 13.5px; }
   .catlist-a:focus-visible { outline-offset: 3px; }
   .going { grid-template-columns: 1fr; }
-  .going-p, .going-p:first-child { aspect-ratio: 4 / 3; }
+  .going-p, .going-p:first-child, .going-p:nth-child(4) { aspect-ratio: 4 / 3; }
   .shop-h { display: block; }
   .buynote { margin-top: 22px; max-width: none; }
   html.enhanced .shop-body { display: block; }
@@ -1472,7 +1490,7 @@ html.enhanced .stage img { cursor: zoom-in; }
   .shop-search { flex: 1 1 100%; min-width: 0; order: -1; margin: 0 0 4px; }
   .band-in { display: block; }
   .band .actions { margin-top: 28px; }
-  .going-p, .going-p:first-child { aspect-ratio: auto; background: none; color: var(--ink); overflow: visible; border-radius: 0; }
+  .going-p, .going-p:first-child, .going-p:nth-child(4) { aspect-ratio: auto; background: none; color: var(--ink); overflow: visible; border-radius: 0; }
   .going-m { position: relative; display: block; aspect-ratio: 16 / 10; border-radius: var(--r); overflow: hidden; background: linear-gradient(140deg, #CDBDA5, #8F7C66); }
   .going-m img { z-index: 0; }
   .going-p::after { display: none; }
@@ -1488,7 +1506,7 @@ html.enhanced .stage img { cursor: zoom-in; }
   .cmp tbody th { min-width: 168px; }
   [data-page="product"] .crumbs li[aria-current] { display: none; }
   .dhero .cap { top: 14px; bottom: auto; right: 14px; }
-  .mood-rest .dir-items ol { grid-template-columns: 1fr; }
+  .mood-rest .dir-items ol, .mood-lon .dir-items ol, .dir-terms dl { grid-template-columns: 1fr; }
   /* the comparison stacks: one card per product, each figure under its label */
   .cmp-o { border: 0; background: none; overflow: visible; }
   .cmp-o::after { display: none; }
