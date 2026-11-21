@@ -1,0 +1,18 @@
+{
+  "candidate": "e4fbc3ab470b9106815ab22cae62aa9751232603",
+  "site_tree": "7829748dc5502dc261f2dfe4e7c8643436dc2a03",
+  "site_files": 36,
+  "host_base": "6a2227a901d4efbe5d1b503580f7e6447f1868a5",
+  "host_keep": ["CNAME", ".nojekyll"],
+  "retired": {
+    "count": 142,
+    "sha256": "e3c6124eb0b4e21aad8e13562e2c0d5ad4ac2af9d84c3308aa878fe898526836",
+    "form": "every path in host_base, less host_keep, that is not in site/: sorted by code point, one per line, each line ending in a newline, then SHA-256 of those bytes"
+  },
+  "live": {
+    "origin": "https://venerabulllife.com",
+    "branch": "main",
+    "publish_tree": "d1e7b542531b375ea9b41bc88d7b8ed3ba040c8e",
+    "form": "the root tree of the published branch: the files of site/ at its root, plus host_keep exactly as they are in host_base"
+  }
+}
