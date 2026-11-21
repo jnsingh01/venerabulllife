@@ -1,0 +1,68 @@
+# Venerabull Life: acceptance runs of one release candidate on a GitHub-hosted runner.
+# It runs only when one of its two acceptance branches is pushed, and the branch selects the mode:
+#   acceptance/life-e4fbc3a        the candidate mode: the five release steps on the package, served on the runner
+#   acceptance/life-e4fbc3a-live   the live mode: the published site, held to the candidate's files (after publication)
+# It never deploys, never writes to the repository and uses no secret; it reads this commit, the published host commit
+# (and, in the live mode, the published branch and site), and keeps its evidence as a run artifact.
+# What it checks, and how the result binds to the candidate: acceptance/run.sh and acceptance/pin.json.
+name: Life acceptance
+
+on:
+  push:
+    branches: ['acceptance/life-e4fbc3a', 'acceptance/life-e4fbc3a-live']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: life-acceptance-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  accept:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PW_VERSION: '1.60.0'
+    steps:
+      - name: Select the mode from the pushed branch
+        run: |
+          case "$GITHUB_REF_NAME" in
+            acceptance/life-e4fbc3a) echo "MODE=candidate" >> "$GITHUB_ENV" ;;
+            acceptance/life-e4fbc3a-live) echo "MODE=live" >> "$GITHUB_ENV" ;;
+            *) echo "unknown branch $GITHUB_REF_NAME: nothing run"; exit 1 ;;
+          esac
+
+      - name: Fetch this commit and the published host commit (and, live, the published branch)
+        run: |
+          git init -q "$RUNNER_TEMP/src"
+          cd "$RUNNER_TEMP/src"
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --no-tags --depth=1 origin "$GITHUB_SHA"
+          git checkout -q --detach "$GITHUB_SHA"
+          base=$(python3 -I -c 'import json; print(json.load(open("acceptance/pin.json", encoding="utf-8"))["host_base"])')
+          git fetch -q --no-tags --depth=1 origin "$base"
+          git cat-file -e "$base^{commit}"
+          if [ "$MODE" = live ]; then
+            branch=$(python3 -I -c 'import json; print(json.load(open("acceptance/pin.json", encoding="utf-8"))["live"]["branch"])')
+            git fetch -q --no-tags --depth=1 origin "refs/heads/$branch:refs/remotes/origin/$branch"
+          fi
+
+      - name: Install Playwright and its headless shell
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pw" --no-audit --no-fund --ignore-scripts "playwright-core@${PW_VERSION}"
+          node "$RUNNER_TEMP/pw/node_modules/playwright-core/cli.js" install --with-deps --only-shell chromium
+
+      - name: Run the acceptance (${{ env.MODE }} mode)
+        env:
+          PW_MODULE: ${{ runner.temp }}/pw/node_modules/playwright-core/index.mjs
+        run: bash "$RUNNER_TEMP/src/acceptance/run.sh" "$RUNNER_TEMP/evidence" "$MODE"
+
+      - name: Keep the evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: life-${{ env.MODE }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/evidence
+          if-no-files-found: error
+          retention-days: 30
