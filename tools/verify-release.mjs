@@ -54,9 +54,11 @@ const report = { runner: 'tools/verify-release.mjs (hosted-runner copy)', starte
   expectedMissing: [], exceptions: [], failed: [], external: [], responses: {}, files: {}, nojs: {}, shots: [], retired: 0 };
 // The one address the browser opens on purpose that names no file: the not-found page at a nested address. Its document
 // answers 404 by design, and Chromium logs that as exactly MISSING_DOC with the document as its source. Only that
-// message, from that source, is expected; every other console error or warning is a fault.
+// message, from that source, is expected; every other console error or warning is a fault. The message carries the
+// response's reason phrase: "404 (Not Found)" from the local server (HTTP/1.1), "404 ()" from the live host, which
+// sends none (HTTP/2). Those two forms, and nothing else, are the expected message.
 const MISSING_PATH = '/no/such/page.html';
-const MISSING_DOC = /^Failed to load resource: the server responded with a status of 404 \(Not Found\)$/;
+const MISSING_DOC = /^Failed to load resource: the server responded with a status of 404 \((?:Not Found)?\)$/;
 let OUT = '';
 const save = () => { if (OUT) { fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2)); } };
 class Refuse extends Error {}
