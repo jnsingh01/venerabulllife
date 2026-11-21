@@ -119,6 +119,44 @@ async function shot(page, name, full) {
   return s;
 }
 
+// With scripts turned off the page runs no timer or animation-frame callback, so an in-page wait on one never ends
+// (and page.evaluate has no timeout). For those pages the scrolling and the settle polling are driven from here: each
+// page read is synchronous, each is bounded, and a read that does not answer fails the walk instead of the run.
+const nodeWait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function bounded(promise, ms, what) {
+  let t;
+  const late = new Promise((_, reject) => { t = setTimeout(() => reject(new Error(`${what}: no answer in ${ms} ms`)), ms); });
+  try { return await Promise.race([promise, late]); } finally { clearTimeout(t); }
+}
+async function scrollNoJs(page) {
+  const [height, vh] = await bounded(page.evaluate(() => [document.documentElement.scrollHeight, innerHeight]), 5000, 'page height');
+  for (let y = 0, i = 0; y < height && i < 30; y += vh * 0.9, i++) { await bounded(page.evaluate((v) => scrollTo(0, v), y), 5000, 'scroll'); await nodeWait(100); }
+  await bounded(page.evaluate(() => scrollTo(0, 0)), 5000, 'scroll'); await nodeWait(100);
+}
+// a synchronous test polled from here every 100 ms until it holds or ms pass
+async function untilNoJs(page, test, ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (await bounded(page.evaluate(test), 5000, 'poll').catch(() => false)) { return true; }
+    await nodeWait(100);
+  }
+  return false;
+}
+const PICTURES_DONE = () => [...document.images].every((i) => i.complete);
+// the settle test of settle(page, true): fonts, every picture, no running finite animation
+const SETTLED_FULL = () => (!document.fonts || document.fonts.status === 'loaded') && [...document.images].every((i) => i.complete) &&
+  !document.getAnimations().some((a) => a.playState === 'running' && a.effect && a.effect.getComputedTiming && Number.isFinite(a.effect.getComputedTiming().endTime));
+async function shotNoJs(page, name) {
+  await scrollNoJs(page);
+  const settled = await untilNoJs(page, SETTLED_FULL, 9000);
+  await nodeWait(100);
+  const file = name + '-full.png';
+  await page.screenshot({ path: path.join(OUT, file), fullPage: true });
+  const s = { file, settled, full: true, url: page.url(), at: clock() };
+  report.shots.push(s);
+  return s;
+}
+
 async function context(browser, width, scripts, site) {
   const ctx = await browser.newContext({ ...VIEW[width], javaScriptEnabled: scripts, locale: 'en-US', timezoneId: 'America/New_York',
     colorScheme: 'light', serviceWorkers: 'block', acceptDownloads: false });
@@ -223,10 +261,11 @@ async function walkNoJs(browser, site, name, url, width) {
   const tag = `nojs-${name}@${width}`;
   try {
     await page.goto(site + url, { waitUntil: 'load' });
-    await page.evaluate(async () => { for (let y = 0, i = 0; y < document.documentElement.scrollHeight && i < 30; y += innerHeight * 0.9, i++) { scrollTo(0, y); await new Promise((s) => setTimeout(s, 100)); } scrollTo(0, 0); }).catch(() => {});
-    await page.waitForFunction(() => [...document.images].every((i) => i.complete), null, { timeout: 15000 }).catch(() => {});
-    const s = await read(page);
-    const c = await shot(page, tag, true);
+    // scrolled and settled from here, never by an in-page timer (see scrollNoJs): the pictures load, then the page is read
+    await scrollNoJs(page);
+    await untilNoJs(page, PICTURES_DONE, 15000);
+    const s = await bounded(read(page), 10000, 'read');
+    const c = await shotNoJs(page, tag);
     report.nojs[tag] = { enhanced: s.enhanced, hiddenImgs: s.imgsOff.length, over: s.over, shot: c.file, settled: c.settled };
     check(`${tag}: the page as written, every picture, no overflow, its capture settled`,
       !s.enhanced && !s.imgsOff.length && s.over === 0 && c.settled, report.nojs[tag]);
